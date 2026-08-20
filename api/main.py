@@ -1,4 +1,5 @@
 import logging
+import shutil
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
@@ -39,6 +40,8 @@ from config.settings import settings
 from config.agent_config import (
     AgentConfig,
     PROJECT_ROOT,
+    AGENT_CONFIG_DIR,
+    delete_agent_config,
     load_agent_config_by_id,
     load_agent_configs,
     save_agent_config,
@@ -403,6 +406,34 @@ def update_user_agent(
     except OSError as error:
         raise HTTPException(status_code=500, detail="Agent 配置保存失败") from error
     return {"agent": updated_config.model_dump()}
+
+
+@app.delete("/agents/{agent_id}")
+def delete_user_agent(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    config = get_owned_agent_config(agent_id, user)
+    source_dir, _, _ = get_agent_knowledge_paths(config)
+    expected_dir = (
+        PROJECT_ROOT / "data" / "knowledge" / user["id"] / agent_id
+    ).resolve()
+    if source_dir != expected_dir:
+        raise HTTPException(status_code=400, detail="Agent 知识库路径不符合用户目录")
+
+    config_path = AGENT_CONFIG_DIR / f"{agent_id}.json"
+    try:
+        delete_agent_config(agent_id)
+        if source_dir.is_dir():
+            shutil.rmtree(source_dir)
+        user_agent_root = source_dir.parent
+        if user_agent_root.is_dir() and not any(user_agent_root.iterdir()):
+            user_agent_root.rmdir()
+    except OSError as error:
+        if not config_path.exists():
+            raise HTTPException(status_code=500, detail="Agent 删除失败") from error
+        raise HTTPException(status_code=500, detail="Agent 文件清理失败") from error
+    return {"success": True, "agent_id": agent_id}
 
 
 @app.get("/admin/agents/{agent_id}")

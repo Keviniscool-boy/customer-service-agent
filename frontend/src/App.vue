@@ -269,6 +269,28 @@ async function saveUserAgent() {
   }
 }
 
+async function deleteUserAgent() {
+  if (!formHasAgent()) return
+  const agentId = agentForm.value.agent_id
+  if (!window.confirm(`确定删除 Agent「${agentForm.value.name}」及其个人知识库吗？`)) return
+
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    await apiRequest(`/agents/${agentId}`, { method: 'DELETE' })
+    if (activeAgentId.value === agentId) {
+      activeAgentId.value = 'ecom-default'
+      localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
+    }
+    closeAgentManager()
+    await loadAgents()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
 function selectAgentFile(event) {
   agentFile.value = event.target.files?.[0] || null
 }
@@ -590,6 +612,7 @@ onMounted(() => {
             <p v-if="agentManagerError" class="manager-error">{{ agentManagerError }}</p>
             <div class="agent-form-actions">
               <button class="primary-button" type="submit" :disabled="agentManagerLoading">{{ agentManagerLoading ? '处理中...' : '保存 Agent' }}</button>
+              <button v-if="agentManagerMode === 'edit'" class="danger-button" type="button" :disabled="agentManagerLoading" @click="deleteUserAgent">删除 Agent</button>
             </div>
 
             <template v-if="agentManagerMode === 'edit'">

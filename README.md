@@ -295,6 +295,7 @@ GET  /agents
 POST /agents
 GET  /agents/{agent_id}
 PUT  /agents/{agent_id}
+DELETE /agents/{agent_id}
 GET  /agents/{agent_id}/knowledge
 POST /agents/{agent_id}/knowledge
 POST /agents/{agent_id}/knowledge/rebuild

@@ -197,6 +197,43 @@ class AgentAccessTest(unittest.TestCase):
         self.assertEqual(denied.status_code, 404)
         self.assertEqual(uploaded.status_code, 200)
 
+    def test_owner_can_delete_private_agent_and_knowledge_directory(self):
+        private_config = self._config(
+            "private-a",
+            owner_user_id=self.user_a_id,
+            is_public=False,
+        )
+        source_dir = (
+            Path.cwd()
+            / "data"
+            / "knowledge"
+            / self.user_a_id
+            / "private-a"
+        )
+        source_dir.mkdir(parents=True)
+        (source_dir / "faq.md").write_text("# FAQ", encoding="utf-8")
+        try:
+            with patch(
+                "api.main.load_agent_config_by_id",
+                return_value=private_config,
+            ), patch(
+                "api.main.get_agent_knowledge_paths",
+                return_value=(source_dir, source_dir / "chunks.json", source_dir / "index.json"),
+            ), patch("api.main.delete_agent_config") as delete_mock:
+                response = self.client.delete(
+                    "/agents/private-a",
+                    headers=self.headers_a,
+                )
+
+            self.assertEqual(response.status_code, 200)
+            delete_mock.assert_called_once_with("private-a")
+            self.assertFalse(source_dir.exists())
+        finally:
+            if source_dir.exists():
+                import shutil
+
+                shutil.rmtree(source_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -111,3 +111,17 @@ def save_agent_config(
         encoding="utf-8",
     )
     return path
+
+
+def delete_agent_config(
+    agent_id: str,
+    directory: str | Path | None = None,
+) -> Path:
+    """删除指定 Agent 配置文件，并返回被删除的路径。"""
+
+    config_dir = Path(directory) if directory else AGENT_CONFIG_DIR
+    path = config_dir / f"{agent_id}.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"Agent 配置文件不存在：{agent_id}")
+    path.unlink()
+    return path

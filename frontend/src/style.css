@@ -273,7 +273,10 @@ td { color: #31413f; }
 .agent-form input:focus, .agent-form textarea:focus { border-color: #287b73; box-shadow: 0 0 0 3px rgba(40, 123, 115, 0.12); }
 .agent-form .wide-field, .agent-form-actions, .agent-tool-note, .manager-error, .knowledge-manager { grid-column: 1 / -1; }
 .agent-form-actions { display: flex; justify-content: flex-end; }
-.agent-form-actions .primary-button { width: auto; min-width: 150px; margin: 0; padding: 0 20px; }
+.agent-form-actions .primary-button, .agent-form-actions .danger-button { width: auto; min-width: 150px; margin: 0; padding: 0 20px; }
+.danger-button { min-height: 50px; color: #9b302c; background: #fff; border: 1px solid #e5b7b3; border-radius: 6px; font-weight: 800; }
+.danger-button:hover:not(:disabled) { background: #fbeeed; }
+.danger-button:disabled { cursor: wait; opacity: 0.6; }
 .agent-tool-note { margin: 0; color: #687775; font-size: 12px; line-height: 1.6; }
 .manager-error { margin: 0; padding: 10px 12px; color: #9b302c; background: #fbeeed; border-radius: 5px; font-size: 12px; line-height: 1.5; }
 .knowledge-manager { padding-top: 20px; border-top: 1px solid #e0e8e5; }
