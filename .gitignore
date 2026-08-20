@@ -1,0 +1,10 @@
+.env
+.venv/
+data/app.db
+data/*.bak
+sessions/
+__pycache__/
+*.log
+.pytest_cache/
+.DS_Store
+.idea/
