@@ -248,6 +248,46 @@ td { color: #31413f; }
 .admin-message small { color: #a0aaa8; font-size: 10px; }
 .conversation-empty { display: grid; min-height: 300px; place-items: center; padding: 30px; color: #82908e; font-size: 13px; text-align: center; }
 
+.sidebar-action { min-height: 36px; margin: 0 4px 20px; color: #cfe2dd; background: transparent; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 5px; font-size: 12px; font-weight: 700; }
+.sidebar-action:hover { color: #123c3a; background: #f1b24a; border-color: #f1b24a; }
+.agent-manager-overlay { position: fixed; z-index: 10; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(18, 60, 58, 0.42); }
+.agent-manager-panel { width: min(980px, 100%); max-height: min(840px, calc(100vh - 48px)); overflow: auto; background: #f8faf9; border: 1px solid #dce7e3; border-radius: 8px; box-shadow: 0 24px 80px rgba(18, 60, 58, 0.25); }
+.agent-manager-heading { display: flex; align-items: flex-start; justify-content: space-between; padding: 24px 28px; background: #fff; border-bottom: 1px solid #e0e8e5; }
+.agent-manager-heading h2 { margin: 0; color: #17212b; font-size: 24px; }
+.icon-close-button { width: 32px; height: 32px; color: #687775; background: transparent; border: 0; font-size: 24px; line-height: 1; }
+.agent-manager-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 500px; }
+.owned-agent-list { padding: 18px 12px; background: #edf5f2; border-right: 1px solid #dce7e3; }
+.agent-create-link, .owned-agent-item { display: block; width: 100%; padding: 11px 12px; text-align: left; border-radius: 5px; }
+.agent-create-link { color: #287b73; background: #fff; border: 1px dashed #9cc5ba; font-weight: 800; }
+.owned-agent-item { margin-top: 6px; color: #31413f; background: transparent; border: 0; }
+.owned-agent-item:hover, .owned-agent-item.active { background: #dcece7; }
+.owned-agent-item strong, .owned-agent-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.owned-agent-item strong { font-size: 13px; }
+.owned-agent-item span { margin-top: 4px; color: #82908e; font-size: 11px; }
+.manager-empty { padding: 16px 8px; color: #82908e; font-size: 12px; line-height: 1.6; }
+.agent-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; padding: 24px 28px 30px; }
+.agent-form label { display: grid; gap: 6px; color: #31413f; font-size: 12px; font-weight: 700; }
+.agent-form input:not([type="checkbox"]), .agent-form textarea { width: 100%; margin: 0; padding: 9px 10px; color: #17212b; background: #fff; border: 1px solid #ccd8d5; border-radius: 5px; outline: none; }
+.agent-form input:not([type="checkbox"]) { height: 40px; }
+.agent-form textarea { resize: vertical; }
+.agent-form input:focus, .agent-form textarea:focus { border-color: #287b73; box-shadow: 0 0 0 3px rgba(40, 123, 115, 0.12); }
+.agent-form .wide-field, .agent-form-actions, .agent-tool-note, .manager-error, .knowledge-manager { grid-column: 1 / -1; }
+.agent-form-actions { display: flex; justify-content: flex-end; }
+.agent-form-actions .primary-button { width: auto; min-width: 150px; margin: 0; padding: 0 20px; }
+.agent-tool-note { margin: 0; color: #687775; font-size: 12px; line-height: 1.6; }
+.manager-error { margin: 0; padding: 10px 12px; color: #9b302c; background: #fbeeed; border-radius: 5px; font-size: 12px; line-height: 1.5; }
+.knowledge-manager { padding-top: 20px; border-top: 1px solid #e0e8e5; }
+.knowledge-manager-heading, .knowledge-upload-row, .owned-knowledge-item { display: flex; align-items: center; gap: 10px; }
+.knowledge-manager-heading { justify-content: space-between; margin-bottom: 14px; }
+.knowledge-manager-heading h3 { margin: 0; color: #17212b; font-size: 15px; }
+.knowledge-manager-heading p { margin: 5px 0 0; color: #82908e; font-size: 12px; }
+.knowledge-manager-heading > span { color: #287b73; font-size: 12px; font-weight: 800; }
+.knowledge-upload-row { flex-wrap: wrap; }
+.owned-knowledge-list { margin-top: 14px; border: 1px solid #e0e8e5; border-radius: 5px; }
+.owned-knowledge-item { justify-content: space-between; min-height: 38px; padding: 0 10px; color: #31413f; font-size: 12px; }
+.owned-knowledge-item + .owned-knowledge-item { border-top: 1px solid #edf1f0; }
+.owned-knowledge-item button { color: #9b302c; background: transparent; border: 0; font-size: 12px; }
+
 @media (max-width: 760px) {
   .auth-shell { grid-template-columns: 1fr; }
   .brand-panel { min-height: 45vh; padding: 48px 28px; }
@@ -276,4 +316,10 @@ td { color: #31413f; }
   .conversation-layout { grid-template-columns: 1fr; }
   .conversation-list-panel { max-height: 260px; border-right: 0; border-bottom: 1px solid #e0e8e5; }
   .conversation-detail-panel { min-height: 360px; }
+  .agent-manager-overlay { padding: 12px; }
+  .agent-manager-layout { grid-template-columns: 1fr; }
+  .owned-agent-list { display: flex; gap: 6px; overflow-x: auto; border-right: 0; border-bottom: 1px solid #dce7e3; }
+  .agent-create-link, .owned-agent-item { flex: 0 0 auto; width: auto; min-width: 130px; }
+  .manager-empty { display: none; }
+  .agent-form { grid-template-columns: 1fr; padding: 20px; }
 }

@@ -25,6 +25,13 @@ const messagesLoading = ref(false)
 const sending = ref(false)
 const workspaceError = ref('')
 const messagesEl = ref(null)
+const showAgentManager = ref(false)
+const agentManagerMode = ref('create')
+const agentManagerLoading = ref(false)
+const agentManagerError = ref('')
+const agentFile = ref(null)
+const agentKnowledge = ref(null)
+const agentForm = ref(createEmptyAgentForm())
 
 const isLogin = computed(() => mode.value === 'login')
 const isLoggedIn = computed(() => authenticated.value && Boolean(user.value))
@@ -35,7 +42,23 @@ const activeAgent = computed(() => agents.value.find((agent) => agent.agent_id =
   name: '小极',
   role: '极客商城智能客服',
   welcome_message: '您好，我是极客商城智能客服小极，很高兴为您服务！',
+  is_public: true,
 })
+
+const ownedAgents = computed(() => agents.value.filter((agent) => !agent.is_public))
+
+function createEmptyAgentForm() {
+  return {
+    agent_id: '',
+    name: '',
+    role: '',
+    welcome_message: '',
+    tone: '友好、清晰、简洁',
+    service_scope: '',
+    model_name: '',
+    temperature: '',
+  }
+}
 
 function visibleReply(payload) {
   let value = typeof payload === 'string' ? payload : payload?.reply
@@ -71,7 +94,9 @@ async function apiRequest(path, options = {}) {
   const headers = { ...(options.headers || {}) }
   const token = localStorage.getItem('xiaojie_token')
   if (token) headers.Authorization = `Bearer ${token}`
-  if (options.body) headers['Content-Type'] = 'application/json'
+  if (options.body && !(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
   const contentType = response.headers.get('content-type') || ''
@@ -152,6 +177,158 @@ async function loadAgents() {
   } catch (error) {
     workspaceError.value = error.message
   }
+}
+
+function openAgentManager() {
+  showAgentManager.value = true
+  agentManagerMode.value = 'create'
+  agentManagerError.value = ''
+  agentForm.value = createEmptyAgentForm()
+  agentKnowledge.value = null
+  agentFile.value = null
+}
+
+function closeAgentManager() {
+  showAgentManager.value = false
+  agentManagerError.value = ''
+  agentFile.value = null
+}
+
+async function editOwnedAgent(agentId) {
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    const data = await apiRequest(`/agents/${agentId}`)
+    const config = data.agent
+    agentManagerMode.value = 'edit'
+    agentForm.value = {
+      agent_id: config.agent_id,
+      name: config.name,
+      role: config.role,
+      welcome_message: config.welcome_message,
+      tone: config.tone,
+      service_scope: (config.service_scope || []).join('\n'),
+      model_name: config.model_name || '',
+      temperature: config.temperature ?? '',
+    }
+    await loadAgentKnowledge()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
+async function loadAgentKnowledge() {
+  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
+  try {
+    agentKnowledge.value = await apiRequest(
+      `/agents/${agentForm.value.agent_id}/knowledge`,
+    )
+  } catch (error) {
+    agentManagerError.value = error.message
+  }
+}
+
+async function saveUserAgent() {
+  const form = agentForm.value
+  if (!form.agent_id.trim() || !form.name.trim() || !form.role.trim()) {
+    agentManagerError.value = '请填写 Agent ID、名称和角色。'
+    return
+  }
+
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    const payload = {
+      agent_id: form.agent_id.trim(),
+      name: form.name.trim(),
+      role: form.role.trim(),
+      welcome_message: form.welcome_message.trim(),
+      tone: form.tone.trim(),
+      service_scope: form.service_scope.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+      enabled_tools: ['search_knowledge'],
+      model_name: form.model_name.trim() || null,
+      temperature: form.temperature === '' ? null : Number(form.temperature),
+    }
+    const path = agentManagerMode.value === 'edit'
+      ? `/agents/${form.agent_id}`
+      : '/agents'
+    const data = await apiRequest(path, {
+      method: agentManagerMode.value === 'edit' ? 'PUT' : 'POST',
+      body: JSON.stringify(payload),
+    })
+    activeAgentId.value = data.agent.agent_id
+    localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
+    closeAgentManager()
+    await loadAgents()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
+function selectAgentFile(event) {
+  agentFile.value = event.target.files?.[0] || null
+}
+
+async function uploadAgentKnowledge() {
+  if (!agentFile.value || !agentForm.value.agent_id) return
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', agentFile.value)
+    await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge`, {
+      method: 'POST',
+      body: formData,
+    })
+    agentFile.value = null
+    await loadAgentKnowledge()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
+async function rebuildAgentKnowledge() {
+  if (!agentForm.value.agent_id) return
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge/rebuild`, {
+      method: 'POST',
+    })
+    await loadAgentKnowledge()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
+async function deleteAgentKnowledge(filename) {
+  if (!formHasAgent()) return
+  if (!window.confirm(`确定删除 ${filename} 吗？`)) return
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    await apiRequest(
+      `/agents/${agentForm.value.agent_id}/knowledge/${encodeURIComponent(filename)}`,
+      { method: 'DELETE' },
+    )
+    await loadAgentKnowledge()
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
+  }
+}
+
+function formHasAgent() {
+  return agentManagerMode.value === 'edit' && Boolean(agentForm.value.agent_id)
 }
 
 async function changeAgent() {
@@ -288,6 +465,10 @@ onMounted(() => {
         </select>
       </label>
 
+      <button class="sidebar-action" type="button" @click="openAgentManager">
+        管理我的 Agent
+      </button>
+
       <div class="session-heading">
         <span>最近会话</span>
         <span>{{ sessions.length }}</span>
@@ -368,6 +549,76 @@ onMounted(() => {
       </form>
       <p v-if="workspaceError" class="workspace-error">{{ workspaceError }}</p>
     </section>
+
+    <div v-if="showAgentManager" class="agent-manager-overlay" @click.self="closeAgentManager">
+      <section class="agent-manager-panel" aria-labelledby="agent-manager-title">
+        <header class="agent-manager-heading">
+          <div>
+            <p class="eyebrow">MY AGENTS</p>
+            <h2 id="agent-manager-title">{{ agentManagerMode === 'edit' ? '编辑 Agent' : '创建 Agent' }}</h2>
+          </div>
+          <button class="icon-close-button" type="button" title="关闭" @click="closeAgentManager">×</button>
+        </header>
+
+        <div class="agent-manager-layout">
+          <aside class="owned-agent-list">
+            <button class="agent-create-link" type="button" @click="openAgentManager">+ 新建 Agent</button>
+            <button
+              v-for="agent in ownedAgents"
+              :key="agent.agent_id"
+              class="owned-agent-item"
+              :class="{ active: agentManagerMode === 'edit' && agent.agent_id === agentForm.agent_id }"
+              type="button"
+              @click="editOwnedAgent(agent.agent_id)"
+            >
+              <strong>{{ agent.name }}</strong>
+              <span>{{ agent.agent_id }}</span>
+            </button>
+            <p v-if="!ownedAgents.length" class="manager-empty">还没有自己的 Agent</p>
+          </aside>
+
+          <form class="agent-form" @submit.prevent="saveUserAgent">
+            <label>Agent ID<input v-model="agentForm.agent_id" :disabled="agentManagerMode === 'edit'" placeholder="例如：我的知识库助手" /></label>
+            <label>名称<input v-model="agentForm.name" placeholder="例如：学习助手" /></label>
+            <label>角色<input v-model="agentForm.role" placeholder="这个 Agent 负责什么" /></label>
+            <label>欢迎语<input v-model="agentForm.welcome_message" placeholder="用户打开对话时看到的内容" /></label>
+            <label>语气<input v-model="agentForm.tone" placeholder="例如：友好、简洁" /></label>
+            <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
+            <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
+            <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+            <p class="agent-tool-note">当前个人 Agent 自动启用知识库搜索，不开放订单和退款工具。</p>
+            <p v-if="agentManagerError" class="manager-error">{{ agentManagerError }}</p>
+            <div class="agent-form-actions">
+              <button class="primary-button" type="submit" :disabled="agentManagerLoading">{{ agentManagerLoading ? '处理中...' : '保存 Agent' }}</button>
+            </div>
+
+            <template v-if="agentManagerMode === 'edit'">
+              <div class="knowledge-manager">
+                <div class="knowledge-manager-heading">
+                  <div><h3>个人知识库</h3><p>上传 Markdown 后会自动建立索引。</p></div>
+                  <span>{{ agentKnowledge?.index_ready ? '已就绪' : '未就绪' }}</span>
+                </div>
+                <div class="knowledge-upload-row">
+                  <label class="file-picker">
+                    <span>{{ agentFile?.name || '选择 .md 文件' }}</span>
+                    <input type="file" accept=".md,text/markdown" @change="selectAgentFile" />
+                  </label>
+                  <button class="refresh-button" type="button" :disabled="agentManagerLoading || !agentFile" @click="uploadAgentKnowledge">上传</button>
+                  <button class="refresh-button" type="button" :disabled="agentManagerLoading" @click="rebuildAgentKnowledge">重建</button>
+                </div>
+                <div v-if="agentKnowledge?.files?.length" class="owned-knowledge-list">
+                  <div v-for="filename in agentKnowledge.files" :key="filename" class="owned-knowledge-item">
+                    <span>{{ filename }}</span>
+                    <button type="button" :disabled="agentManagerLoading" @click="deleteAgentKnowledge(filename)">删除</button>
+                  </div>
+                </div>
+                <p v-else class="manager-empty">还没有上传 Markdown 文件</p>
+              </div>
+            </template>
+          </form>
+        </div>
+      </section>
+    </div>
   </main>
 
   <main v-else class="auth-shell">
