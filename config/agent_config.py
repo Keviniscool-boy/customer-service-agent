@@ -20,6 +20,8 @@ class AgentConfig(BaseModel):
         max_length=100,
         pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$",
     )
+    owner_user_id: str | None = Field(default=None, min_length=1)
+    is_public: bool = True
     name: str = Field(min_length=1, max_length=100)
     role: str = Field(min_length=1, max_length=500)
     welcome_message: str = Field(min_length=1, max_length=1000)

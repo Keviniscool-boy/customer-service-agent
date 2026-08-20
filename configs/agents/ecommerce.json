@@ -1,5 +1,7 @@
 {
   "agent_id": "ecom-default",
+  "owner_user_id": null,
+  "is_public": true,
   "name": "小极",
   "role": "极客商城电商平台的智能客服",
   "welcome_message": "您好，我是极客商城智能客服小极，很高兴为您服务！",

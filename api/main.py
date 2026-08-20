@@ -233,6 +233,29 @@ def get_agent_config(agent_id: str):
         raise HTTPException(status_code=404, detail="Agent 不存在") from error
 
 
+def get_user_agent_config(agent_id: str, user: dict):
+    """只返回当前用户有权使用的 Agent，避免泄露私有 Agent 是否存在。"""
+
+    config = get_agent_config(agent_id)
+    if (
+        user.get("role") != "admin"
+        and not config.is_public
+        and config.owner_user_id != user.get("id")
+    ):
+        raise HTTPException(status_code=404, detail="Agent 不存在")
+    return config
+
+
+def validate_agent_owner(config: AgentConfig) -> None:
+    if config.owner_user_id and get_user_by_id(config.owner_user_id) is None:
+        raise HTTPException(status_code=400, detail="Agent 归属用户不存在")
+    if not config.is_public and not config.owner_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="私有 Agent 必须指定归属用户",
+        )
+
+
 def get_agent_knowledge_paths(agent_config):
     source_dir = Path(agent_config.knowledge_base_path)
     if not source_dir.is_absolute():
@@ -271,8 +294,14 @@ def list_agents(user: dict = Depends(get_current_user)):
                 "role": config.role,
                 "welcome_message": config.welcome_message,
                 "service_scope": config.service_scope,
+                "is_public": config.is_public,
             }
             for config in configs.values()
+            if (
+                user.get("role") == "admin"
+                or config.is_public
+                or config.owner_user_id == user.get("id")
+            )
         ]
     }
 
@@ -290,6 +319,7 @@ def create_agent_config(
     config: AgentConfig,
     user: dict = Depends(require_admin),
 ):
+    validate_agent_owner(config)
     try:
         save_agent_config(config)
     except FileExistsError as error:
@@ -305,6 +335,7 @@ def update_agent_config(
 ):
     if config.agent_id != agent_id:
         raise HTTPException(status_code=400, detail="Agent ID 不能修改")
+    validate_agent_owner(config)
     try:
         save_agent_config(config, overwrite=True)
     except OSError as error:
@@ -665,7 +696,7 @@ def create_new_session(
     request: SessionCreateRequest,
     user: dict = Depends(get_current_user),
 ):
-    get_agent_config(request.agent_id)
+    get_user_agent_config(request.agent_id, user)
     session_id = create_session(
         user["id"],
         request.title,
@@ -712,7 +743,7 @@ def remove_session(session_id: str, user: dict = Depends(get_current_user)):
 
 @app.post("/chat")
 def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
-    agent_config = get_agent_config(request.agent_id)
+    agent_config = get_user_agent_config(request.agent_id, user)
     agent = EcomAgent(
         user_id=user["id"],
         session_id=request.session_id,
