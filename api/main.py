@@ -141,6 +141,22 @@ class SessionCreateRequest(BaseModel):
     agent_id: str = "ecom-default"
 
 
+class UserAgentConfigRequest(BaseModel):
+    agent_id: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$",
+    )
+    name: str = Field(min_length=1, max_length=100)
+    role: str = Field(min_length=1, max_length=500)
+    welcome_message: str = Field(min_length=1, max_length=1000)
+    tone: str = Field(min_length=1, max_length=500)
+    service_scope: list[str] = Field(min_length=1)
+    enabled_tools: list[str] = Field(default_factory=list)
+    model_name: str | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+
+
 class OrderCreateRequest(BaseModel):
     product_name: str = Field(min_length=1)
     amount: float = Field(gt=0)
@@ -246,6 +262,24 @@ def get_user_agent_config(agent_id: str, user: dict):
     return config
 
 
+def get_owned_agent_config(agent_id: str, user: dict):
+    """只返回当前用户拥有的 Agent，公开 Agent 也不能被用户修改。"""
+
+    config = get_agent_config(agent_id)
+    if config.owner_user_id != user.get("id"):
+        raise HTTPException(status_code=404, detail="Agent 不存在")
+    return config
+
+
+def get_manageable_agent_config(agent_id: str, user: dict):
+    """返回管理员或 Agent 所有者可以维护的 Agent。"""
+
+    config = get_agent_config(agent_id)
+    if user.get("role") != "admin" and config.owner_user_id != user.get("id"):
+        raise HTTPException(status_code=404, detail="Agent 不存在")
+    return config
+
+
 def validate_agent_owner(config: AgentConfig) -> None:
     if config.owner_user_id and get_user_by_id(config.owner_user_id) is None:
         raise HTTPException(status_code=400, detail="Agent 归属用户不存在")
@@ -306,6 +340,71 @@ def list_agents(user: dict = Depends(get_current_user)):
     }
 
 
+@app.post("/agents")
+def create_user_agent(
+    request: UserAgentConfigRequest,
+    user: dict = Depends(get_current_user),
+):
+    unsupported_tools = set(request.enabled_tools) - {"search_knowledge"}
+    if unsupported_tools:
+        raise HTTPException(
+            status_code=400,
+            detail="用户 Agent 目前只能启用 search_knowledge 工具",
+        )
+
+    config = AgentConfig(
+        **request.model_dump(),
+        owner_user_id=user["id"],
+        is_public=False,
+        knowledge_base_path=(
+            f"data/knowledge/{user['id']}/{request.agent_id}"
+        ),
+    )
+    try:
+        save_agent_config(config)
+    except FileExistsError as error:
+        raise HTTPException(status_code=409, detail="Agent 已存在") from error
+    return {"agent": config.model_dump()}
+
+
+@app.get("/agents/{agent_id}")
+def user_agent_detail(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    config = get_user_agent_config(agent_id, user)
+    return {"agent": config.model_dump()}
+
+
+@app.put("/agents/{agent_id}")
+def update_user_agent(
+    agent_id: str,
+    request: UserAgentConfigRequest,
+    user: dict = Depends(get_current_user),
+):
+    if request.agent_id != agent_id:
+        raise HTTPException(status_code=400, detail="Agent ID 不能修改")
+    config = get_owned_agent_config(agent_id, user)
+    unsupported_tools = set(request.enabled_tools) - {"search_knowledge"}
+    if unsupported_tools:
+        raise HTTPException(
+            status_code=400,
+            detail="用户 Agent 目前只能启用 search_knowledge 工具",
+        )
+
+    updated_config = AgentConfig(
+        **request.model_dump(),
+        owner_user_id=config.owner_user_id,
+        is_public=config.is_public,
+        knowledge_base_path=config.knowledge_base_path,
+    )
+    try:
+        save_agent_config(updated_config, overwrite=True)
+    except OSError as error:
+        raise HTTPException(status_code=500, detail="Agent 配置保存失败") from error
+    return {"agent": updated_config.model_dump()}
+
+
 @app.get("/admin/agents/{agent_id}")
 def admin_agent_detail(
     agent_id: str,
@@ -360,7 +459,11 @@ def knowledge_status(
     agent_id: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = get_agent_config(agent_id)
+    agent_config = (
+        get_agent_config(agent_id)
+        if user.get("role") == "admin"
+        else get_manageable_agent_config(agent_id, user)
+    )
     source_dir, _, index_path = get_agent_knowledge_paths(agent_config)
     files = (
         sorted(path.name for path in source_dir.glob("*.md"))
@@ -380,7 +483,11 @@ async def upload_knowledge(
     file: UploadFile = File(...),
     user: dict = Depends(require_admin),
 ):
-    agent_config = get_agent_config(agent_id)
+    agent_config = (
+        get_agent_config(agent_id)
+        if user.get("role") == "admin"
+        else get_manageable_agent_config(agent_id, user)
+    )
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     filename = Path(file.filename or "").name
     if not filename or filename != file.filename:
@@ -426,7 +533,11 @@ def rebuild_knowledge(
     agent_id: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = get_agent_config(agent_id)
+    agent_config = (
+        get_agent_config(agent_id)
+        if user.get("role") == "admin"
+        else get_manageable_agent_config(agent_id, user)
+    )
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     try:
         result = build_knowledge_index(source_dir, chunks_path, index_path)
@@ -449,7 +560,11 @@ def delete_knowledge_file(
     filename: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = get_agent_config(agent_id)
+    agent_config = (
+        get_agent_config(agent_id)
+        if user.get("role") == "admin"
+        else get_manageable_agent_config(agent_id, user)
+    )
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     safe_filename = Path(filename).name
     if safe_filename != filename or Path(filename).suffix.lower() != ".md":
@@ -483,6 +598,40 @@ def delete_knowledge_file(
         "file_count": result["file_count"],
         "chunk_count": result["chunk_count"],
     }
+
+
+@app.get("/agents/{agent_id}/knowledge")
+def user_knowledge_status(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    return knowledge_status(agent_id, user)
+
+
+@app.post("/agents/{agent_id}/knowledge")
+async def user_upload_knowledge(
+    agent_id: str,
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+):
+    return await upload_knowledge(agent_id, file, user)
+
+
+@app.post("/agents/{agent_id}/knowledge/rebuild")
+def user_rebuild_knowledge(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    return rebuild_knowledge(agent_id, user)
+
+
+@app.delete("/agents/{agent_id}/knowledge/{filename}")
+def user_delete_knowledge_file(
+    agent_id: str,
+    filename: str,
+    user: dict = Depends(get_current_user),
+):
+    return delete_knowledge_file(agent_id, filename, user)
 
 
 @app.get("/admin/users")

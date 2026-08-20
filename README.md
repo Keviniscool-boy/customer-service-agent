@@ -11,7 +11,7 @@
 | 用户 | 注册、登录、JWT 鉴权、普通用户和管理员角色 |
 | 会话 | 新建会话、切换会话、保存历史消息、删除会话 |
 | 客服 | 订单查询、物流查询、商品搜索、退换货咨询、退款和人工转接 |
-| 知识库 | 查询配送说明、退换货政策和 FAQ |
+| 知识库 | 查询配送说明、退换货政策和 FAQ；用户可以管理自己的 Markdown 知识库 |
 | 订单 | 查看订单、创建订单、取消订单、申请退款 |
 | 管理员 | 查看用户、订单、退款、会话和聊天记录 |
 | 部署 | 本地启动或 Docker Compose 启动 |
@@ -114,7 +114,20 @@ Markdown 文档
 
 当前使用 JSON 文件和余弦相似度，适合学习和小规模知识库。大型知识库后续可以换成向量数据库。
 
-## 5. 数据库和会话记忆
+## 5. Agent 配置和权限
+
+普通用户登录后可以创建自己的私有 Agent。Agent 的配置文件和知识库目录由服务端生成，用户不能通过请求参数修改存储路径。
+
+用户 Agent 当前只能启用 `search_knowledge`，不能直接启用订单、退款等业务工具，避免把业务数据工具开放给个人配置。管理员仍然可以在管理员接口中配置完整工具组合。
+
+普通用户只能看到：
+
+- 公开 Agent
+- 自己拥有的私有 Agent
+
+用户只能修改自己拥有的 Agent，并管理自己 Agent 下的 Markdown 知识库。
+
+## 6. 数据库和会话记忆
 
 SQLite 数据库路径：`data/app.db`。
 
@@ -133,7 +146,7 @@ SQLite 数据库路径：`data/app.db`。
 
 当前订单和商品是学习版模拟数据，启动数据库时会自动初始化。它没有连接真实电商订单系统。
 
-## 6. 环境变量
+## 7. 环境变量
 
 复制模板：
 
@@ -156,7 +169,7 @@ Copy-Item .env.example .env
 
 `.env`、数据库、会话文件和日志不要上传到 GitHub。
 
-## 7. 本地启动
+## 8. 本地启动
 
 ### 后端
 
@@ -218,7 +231,7 @@ uv run python main.py
 - `reset`：清空当前会话上下文
 - `quit` 或 `exit`：退出程序
 
-## 8. Docker Compose 启动
+## 9. Docker Compose 启动
 
 先确保根目录已经有 `.env`，然后运行：
 
@@ -247,7 +260,7 @@ docker compose down
 
 `data` 和 `sessions` 会映射到本机目录，容器重建不会自动删除它们。
 
-## 9. 创建管理员
+## 10. 创建管理员
 
 运行：
 
@@ -263,7 +276,7 @@ uv run python api/admin_setup.py
 - 退款记录
 - 用户会话和聊天内容
 
-## 10. API 接口
+## 11. API 接口
 
 需要登录的接口都要携带：
 
@@ -278,6 +291,14 @@ GET  /health
 POST /register
 POST /login
 GET  /products?keyword=外套
+GET  /agents
+POST /agents
+GET  /agents/{agent_id}
+PUT  /agents/{agent_id}
+GET  /agents/{agent_id}/knowledge
+POST /agents/{agent_id}/knowledge
+POST /agents/{agent_id}/knowledge/rebuild
+DELETE /agents/{agent_id}/knowledge/{filename}
 ```
 
 ### 当前用户接口
@@ -323,7 +344,7 @@ GET /admin/sessions/{session_id}/messages
 
 完整接口记录见 [API接口清单.md](docs/API接口清单.md)，Swagger 地址是 <http://127.0.0.1:8765/docs>。
 
-## 11. 测试
+## 12. 测试
 
 运行全部 Python 测试：
 
@@ -346,7 +367,7 @@ npm run build
 
 项目已经覆盖登录、会话、聊天纯文本、工具调用、MCP、RAG、订单、退款、管理员权限和异常处理测试。
 
-## 12. 基础压测
+## 13. 基础压测
 
 启动 Locust：
 
@@ -370,7 +391,7 @@ P95：约 1100 ms
 
 这只是本地开发环境和 SQLite 的结果，不能代表生产容量。详细记录见 [压测记录.md](docs/压测记录.md)。
 
-## 13. 项目目录
+## 14. 项目目录
 
 ```text
 ecom-service-agent-learning/
@@ -402,7 +423,7 @@ ecom-service-agent-learning/
 └─ README.md               项目说明
 ```
 
-## 14. 当前限制和后续方向
+## 15. 当前限制和后续方向
 
 当前版本是电商学习版 `v2.0`：
 
@@ -416,7 +437,7 @@ ecom-service-agent-learning/
 
 后续版本可以加入真实业务数据库、向量数据库、Redis、模型聊天压测、多进程部署和更完善的运营监控。
 
-## 15. 相关记录
+## 16. 相关记录
 
 - [学习记录.md](docs/学习记录.md)：开发过程和每一步的说明
 - [项目完善计划.md](docs/项目完善计划.md)：后续完善方向
