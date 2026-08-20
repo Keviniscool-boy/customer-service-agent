@@ -6,6 +6,27 @@ from agent import database
 
 
 class DatabaseTest(unittest.TestCase):
+    def test_connection_enables_sqlite_reliability_options(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                database.init_db()
+                connection = database.get_connection()
+                foreign_keys = connection.execute(
+                    "PRAGMA foreign_keys"
+                ).fetchone()[0]
+                journal_mode = connection.execute(
+                    "PRAGMA journal_mode"
+                ).fetchone()[0]
+                connection.close()
+
+                self.assertEqual(foreign_keys, 1)
+                self.assertEqual(str(journal_mode).lower(), "wal")
+            finally:
+                database.DB_PATH = original_path
+
     def test_save_and_load_full_messages(self):
         original_path = database.DB_PATH
 

@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from agent.rag.retriever import Retriever
 
@@ -8,8 +9,11 @@ _retriever = Retriever()
 MIN_RELEVANCE_SCORE = 0.50
 
 
-def search_knowledge(query: str, top_k: int = 2) -> str:
-    """搜索退换货、配送和常见问题等知识文档。"""
+def _search_with_retriever(
+    retriever: Retriever,
+    query: str,
+    top_k: int = 2,
+) -> str:
     if not query or not query.strip():
         return json.dumps(
             {"success": False, "message": "搜索问题不能为空"},
@@ -17,7 +21,7 @@ def search_knowledge(query: str, top_k: int = 2) -> str:
         )
 
     try:
-        results = _retriever.search(query, top_k=max(1, min(top_k, 5)))
+        results = retriever.search(query, top_k=max(1, min(top_k, 5)))
     except Exception as error:
         return json.dumps(
             {
@@ -52,3 +56,23 @@ def search_knowledge(query: str, top_k: int = 2) -> str:
         {"success": True, "data": items},
         ensure_ascii=False,
     )
+
+
+def search_knowledge(query: str, top_k: int = 2) -> str:
+    """兼容 1.0，搜索默认电商知识库。"""
+
+    return _search_with_retriever(_retriever, query, top_k)
+
+
+def make_search_knowledge(index_path: str | Path):
+    """为指定索引创建一个延迟初始化的知识库工具。"""
+
+    retriever: Retriever | None = None
+
+    def search(query: str, top_k: int = 2) -> str:
+        nonlocal retriever
+        if retriever is None:
+            retriever = Retriever(index_path)
+        return _search_with_retriever(retriever, query, top_k)
+
+    return search

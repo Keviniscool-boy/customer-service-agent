@@ -16,6 +16,13 @@ const users = ref([])
 const orders = ref([])
 const refunds = ref([])
 const sessions = ref([])
+const agents = ref([])
+const selectedAgentId = ref(null)
+const agentConfig = ref(null)
+const agentForm = ref(null)
+const knowledgeStatus = ref(null)
+const knowledgeFile = ref(null)
+const knowledgeLoading = ref(false)
 const selectedSession = ref(null)
 const conversationMessages = ref([])
 const conversationLoading = ref(false)
@@ -25,6 +32,7 @@ const pageTitle = computed(() => ({
   users: '用户管理',
   orders: '订单管理',
   refunds: '退款记录',
+  agents: 'Agent 与知识库',
   conversations: '对话记录',
 }[activeTab.value]))
 
@@ -39,26 +47,146 @@ async function getAdminData(path) {
   return data
 }
 
+async function sendAdminData(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('xiaojie_token')}`,
+      ...(options.headers || {}),
+    },
+  })
+  const contentType = response.headers.get('content-type') || ''
+  const data = contentType.includes('application/json') ? await response.json() : await response.text()
+  if (!response.ok) throw new Error(data?.error?.message || '操作失败')
+  return data
+}
+
 async function refresh() {
   loading.value = true
   error.value = ''
   try {
-    const [summaryData, usersData, ordersData, refundsData, sessionsData] = await Promise.all([
+    const [summaryData, usersData, ordersData, refundsData, sessionsData, agentsData] = await Promise.all([
       getAdminData('/admin/summary'),
       getAdminData('/admin/users'),
       getAdminData('/admin/orders'),
       getAdminData('/admin/refunds'),
       getAdminData('/admin/sessions'),
+      getAdminData('/agents'),
     ])
     summary.value = summaryData.summary
     users.value = usersData.users
     orders.value = ordersData.orders
     refunds.value = refundsData.refunds
     sessions.value = sessionsData.sessions
+    agents.value = agentsData.agents || []
+    if (!agents.value.some((agent) => agent.agent_id === selectedAgentId.value)) {
+      selectedAgentId.value = agents.value[0]?.agent_id || null
+    }
+    if (selectedAgentId.value) await loadKnowledgeStatus()
   } catch (requestError) {
     error.value = requestError.message
   } finally {
     loading.value = false
+  }
+}
+
+async function loadKnowledgeStatus() {
+  if (!selectedAgentId.value) return
+  try {
+    const [statusData, configData] = await Promise.all([
+      getAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`),
+      getAdminData(`/admin/agents/${selectedAgentId.value}`),
+    ])
+    knowledgeStatus.value = statusData
+    agentConfig.value = configData.agent
+    agentForm.value = {
+      name: agentConfig.value.name,
+      role: agentConfig.value.role,
+      welcome_message: agentConfig.value.welcome_message,
+      tone: agentConfig.value.tone,
+      service_scope: agentConfig.value.service_scope.join('\n'),
+      knowledge_base_path: agentConfig.value.knowledge_base_path,
+      enabled_tools: agentConfig.value.enabled_tools.join(', '),
+      model_name: agentConfig.value.model_name || '',
+      temperature: agentConfig.value.temperature ?? '',
+    }
+  } catch (requestError) {
+    error.value = requestError.message
+  }
+}
+
+async function saveAgentConfig() {
+  if (!selectedAgentId.value || !agentForm.value || !agentConfig.value) return
+  knowledgeLoading.value = true
+  error.value = ''
+  try {
+    await sendAdminData(`/admin/agents/${selectedAgentId.value}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...agentConfig.value,
+        ...agentForm.value,
+        service_scope: agentForm.value.service_scope.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
+        enabled_tools: agentForm.value.enabled_tools.split(',').map((item) => item.trim()).filter(Boolean),
+        model_name: agentForm.value.model_name.trim() || null,
+        temperature: agentForm.value.temperature === '' ? null : Number(agentForm.value.temperature),
+      }),
+    })
+    await refresh()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+function selectKnowledgeFile(event) {
+  knowledgeFile.value = event.target.files?.[0] || null
+}
+
+async function uploadKnowledge() {
+  if (!knowledgeFile.value || !selectedAgentId.value) return
+  knowledgeLoading.value = true
+  error.value = ''
+  try {
+    const formData = new FormData()
+    formData.append('file', knowledgeFile.value)
+    await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`, {
+      method: 'POST',
+      body: formData,
+    })
+    knowledgeFile.value = null
+    await loadKnowledgeStatus()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+async function rebuildKnowledge() {
+  if (!selectedAgentId.value) return
+  knowledgeLoading.value = true
+  try {
+    await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge/rebuild`, { method: 'POST' })
+    await loadKnowledgeStatus()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+async function deleteKnowledge(filename) {
+  if (!selectedAgentId.value) return
+  knowledgeLoading.value = true
+  try {
+    await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+    await loadKnowledgeStatus()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
   }
 }
 
@@ -81,6 +209,10 @@ function formatAmount(amount) {
   return `¥${Number(amount || 0).toFixed(2)}`
 }
 
+function displayAgentName(agentId) {
+  return agents.value.find((agent) => agent.agent_id === agentId)?.name || agentId || 'Agent'
+}
+
 onMounted(refresh)
 </script>
 
@@ -99,6 +231,7 @@ onMounted(refresh)
         <button :class="{ active: activeTab === 'users' }" type="button" @click="activeTab = 'users'">用户管理</button>
         <button :class="{ active: activeTab === 'orders' }" type="button" @click="activeTab = 'orders'">订单管理</button>
         <button :class="{ active: activeTab === 'refunds' }" type="button" @click="activeTab = 'refunds'">退款记录</button>
+        <button :class="{ active: activeTab === 'agents' }" type="button" @click="activeTab = 'agents'">Agent 与知识库</button>
         <button :class="{ active: activeTab === 'conversations' }" type="button" @click="activeTab = 'conversations'">对话记录</button>
       </nav>
       <div class="admin-user">
@@ -140,6 +273,46 @@ onMounted(refresh)
         </section>
       </template>
 
+      <section v-else-if="activeTab === 'agents'" class="admin-section knowledge-admin">
+        <div class="section-heading">
+          <div>
+            <h2>Agent 知识库</h2>
+            <p class="section-hint">上传 Markdown 后会自动切片并重建索引。</p>
+          </div>
+          <select v-model="selectedAgentId" class="admin-select" @change="loadKnowledgeStatus">
+            <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">{{ agent.name }}</option>
+          </select>
+        </div>
+        <div v-if="agentForm" class="agent-config-form">
+          <label>名称<input v-model="agentForm.name" /></label>
+          <label>角色<input v-model="agentForm.role" /></label>
+          <label>欢迎语<input v-model="agentForm.welcome_message" /></label>
+          <label>语气<input v-model="agentForm.tone" /></label>
+          <label>知识库目录<input v-model="agentForm.knowledge_base_path" /></label>
+          <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
+          <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
+          <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+          <label class="wide-field">启用工具<textarea v-model="agentForm.enabled_tools" rows="2" placeholder="多个工具用英文逗号分隔"></textarea></label>
+          <div class="wide-field form-actions"><button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="saveAgentConfig">保存 Agent 配置</button></div>
+        </div>
+        <div v-if="knowledgeStatus" class="knowledge-toolbar">
+          <label class="file-picker">
+            <span>{{ knowledgeFile?.name || '选择 .md 文件' }}</span>
+            <input type="file" accept=".md,text/markdown" @change="selectKnowledgeFile" />
+          </label>
+          <button class="refresh-button" type="button" :disabled="knowledgeLoading || !knowledgeFile" @click="uploadKnowledge">{{ knowledgeLoading ? '处理中...' : '上传并索引' }}</button>
+          <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="rebuildKnowledge">重建索引</button>
+          <span class="index-state">{{ knowledgeStatus.index_ready ? '索引已就绪' : '索引未就绪' }}</span>
+        </div>
+        <div v-if="knowledgeStatus?.files?.length" class="knowledge-files">
+          <div v-for="filename in knowledgeStatus.files" :key="filename" class="knowledge-file">
+            <span>{{ filename }}</span>
+            <button type="button" :disabled="knowledgeLoading" @click="deleteKnowledge(filename)">删除</button>
+          </div>
+        </div>
+        <p v-else class="empty-cell">当前 Agent 还没有 Markdown 知识库文件。</p>
+      </section>
+
       <section v-else-if="activeTab === 'conversations'" class="conversation-layout">
         <div class="conversation-list-panel">
           <div class="conversation-panel-heading">
@@ -170,7 +343,7 @@ onMounted(refresh)
             <div v-if="conversationLoading" class="conversation-empty">正在读取聊天记录...</div>
             <div v-else class="conversation-messages">
               <div v-for="(message, index) in conversationMessages" :key="`${message.role}-${index}`" class="admin-message" :class="message.role === 'user' ? 'admin-message-user' : 'admin-message-agent'">
-                <span class="admin-message-role">{{ message.role === 'user' ? '用户' : '小极' }}</span>
+                <span class="admin-message-role">{{ message.role === 'user' ? '用户' : displayAgentName(selectedSession.agent_id) }}</span>
                 <p>{{ message.content }}</p>
                 <small>{{ message.created_at }}</small>
               </div>

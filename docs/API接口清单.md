@@ -56,6 +56,7 @@ POST /orders/{order_id}/refunds
 ## 会话和聊天
 
 ```text
+GET    /agents
 GET    /sessions
 POST   /sessions
 DELETE /sessions/{session_id}
@@ -63,12 +64,15 @@ POST   /chat
 GET    /me
 ```
 
+`/agents` 返回当前配置目录中的 Agent。创建会话或聊天时可以传 `agent_id`，不传时使用 `ecom-default`。
+
 聊天请求：
 
 ```json
 {
   "message": "查询订单 ORD-001",
-  "session_id": "可选"
+  "session_id": "可选",
+  "agent_id": "ecom-default"
 }
 ```
 
@@ -90,9 +94,18 @@ GET    /me
 
 ```text
 GET /admin/summary
+GET /admin/agents/{agent_id}
+POST /admin/agents
+PUT /admin/agents/{agent_id}
 GET /admin/users
 GET /admin/orders
 GET /admin/refunds
 GET /admin/sessions
 GET /admin/sessions/{session_id}/messages
+GET /admin/agents/{agent_id}/knowledge
+POST /admin/agents/{agent_id}/knowledge
+POST /admin/agents/{agent_id}/knowledge/rebuild
+DELETE /admin/agents/{agent_id}/knowledge/{filename}
 ```
+
+上传知识库使用 `multipart/form-data`，字段名是 `file`，目前只支持 UTF-8 编码的 `.md` 文件，单个文件最大 2 MB。
