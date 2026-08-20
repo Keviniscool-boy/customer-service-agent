@@ -1,0 +1,5623 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "customer-service-agent",
+    "languages": [
+      "Python",
+      "JavaScript",
+      "Vue"
+    ],
+    "frameworks": [
+      "FastAPI",
+      "Vue 3",
+      "MCP",
+      "RAG"
+    ],
+    "description": "E-commerce customer service Agent built with FastAPI, Vue 3, SQLite, MCP, and RAG.",
+    "analyzedAt": "2026-08-20T08:47:54.889Z",
+    "gitCommitHash": "c6b84e4e9373acf9c2855e0607fc469fe823319e"
+  },
+  "nodes": [
+    {
+      "id": "service:.dockerignore",
+      "type": "service",
+      "name": ".dockerignore",
+      "filePath": ".dockerignore",
+      "summary": "Project file responsible for .dockerignore.",
+      "tags": [
+        "deployment"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "unknown",
+        "fileCategory": "infra",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "config:.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": ".env.example",
+      "summary": "Project configuration controlling runtime or build behavior.",
+      "tags": [
+        "configuration"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "config",
+        "fileCategory": "config",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "definitionCount": 8
+        }
+      }
+    },
+    {
+      "id": "file:.ua/.understandignore",
+      "type": "file",
+      "name": ".understandignore",
+      "filePath": ".ua/.understandignore",
+      "summary": "Project file responsible for .ua/.understandignore.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "unknown",
+        "fileCategory": "code",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "service:Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "Dockerfile",
+      "summary": "Builds the backend Python service image.",
+      "tags": [
+        "deployment"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "dockerfile",
+        "fileCategory": "infra",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "serviceCount": 1,
+          "stepCount": 7
+        }
+      }
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Project guide covering local startup, Docker startup, configuration, and API entry points.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 24
+        }
+      }
+    },
+    {
+      "id": "file:agent/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "agent/__init__.py",
+      "summary": "Project file responsible for agent/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:agent/auth_cli.py",
+      "type": "file",
+      "name": "auth_cli.py",
+      "filePath": "agent/auth_cli.py",
+      "summary": "Project file responsible for agent/auth_cli.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 2,
+          "functionCount": 2,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/auth_cli.py:read_password",
+      "type": "function",
+      "name": "read_password",
+      "filePath": "agent/auth_cli.py",
+      "summary": "Function read_password defined in agent/auth_cli.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 6
+    },
+    {
+      "id": "function:agent/auth_cli.py:login_or_register",
+      "type": "function",
+      "name": "login_or_register",
+      "filePath": "agent/auth_cli.py",
+      "summary": "Function login_or_register defined in agent/auth_cli.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 9,
+      "endLine": 47
+    },
+    {
+      "id": "file:agent/chat.py",
+      "type": "file",
+      "name": "chat.py",
+      "filePath": "agent/chat.py",
+      "summary": "Core Agent orchestration layer for context, model calls, tool calls, RAG retrieval, and human handoff.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 8,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:agent/chat.py:EcomAgent",
+      "type": "class",
+      "name": "EcomAgent",
+      "filePath": "agent/chat.py",
+      "summary": "Core Agent orchestration layer for context, model calls, tool calls, RAG retrieval, and human handoff.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "complex",
+      "startLine": 24,
+      "endLine": 296
+    },
+    {
+      "id": "file:agent/database.py",
+      "type": "file",
+      "name": "database.py",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 26,
+          "functionCount": 26,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/database.py:get_connection",
+      "type": "function",
+      "name": "get_connection",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 17,
+      "endLine": 22
+    },
+    {
+      "id": "function:agent/database.py:init_db",
+      "type": "function",
+      "name": "init_db",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "complex",
+      "startLine": 24,
+      "endLine": 182
+    },
+    {
+      "id": "function:agent/database.py:create_user",
+      "type": "function",
+      "name": "create_user",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 185,
+      "endLine": 201
+    },
+    {
+      "id": "function:agent/database.py:get_user_by_username",
+      "type": "function",
+      "name": "get_user_by_username",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 204,
+      "endLine": 215
+    },
+    {
+      "id": "function:agent/database.py:get_user_by_id",
+      "type": "function",
+      "name": "get_user_by_id",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 218,
+      "endLine": 229
+    },
+    {
+      "id": "function:agent/database.py:set_user_role",
+      "type": "function",
+      "name": "set_user_role",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 232,
+      "endLine": 243
+    },
+    {
+      "id": "function:agent/database.py:update_user_password",
+      "type": "function",
+      "name": "update_user_password",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 246,
+      "endLine": 254
+    },
+    {
+      "id": "function:agent/database.py:get_order",
+      "type": "function",
+      "name": "get_order",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 257,
+      "endLine": 258
+    },
+    {
+      "id": "function:agent/database.py:get_order_for_user",
+      "type": "function",
+      "name": "get_order_for_user",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 261,
+      "endLine": 276
+    },
+    {
+      "id": "function:agent/database.py:create_order",
+      "type": "function",
+      "name": "create_order",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 279,
+      "endLine": 310
+    },
+    {
+      "id": "function:agent/database.py:list_orders_for_user",
+      "type": "function",
+      "name": "list_orders_for_user",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 313,
+      "endLine": 327
+    },
+    {
+      "id": "function:agent/database.py:search_products",
+      "type": "function",
+      "name": "search_products",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 330,
+      "endLine": 346
+    },
+    {
+      "id": "function:agent/database.py:find_active_refund",
+      "type": "function",
+      "name": "find_active_refund",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 349,
+      "endLine": 364
+    },
+    {
+      "id": "function:agent/database.py:create_refund",
+      "type": "function",
+      "name": "create_refund",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 367,
+      "endLine": 396
+    },
+    {
+      "id": "function:agent/database.py:list_refunds_for_user",
+      "type": "function",
+      "name": "list_refunds_for_user",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 399,
+      "endLine": 413
+    },
+    {
+      "id": "function:agent/database.py:transition_order_status",
+      "type": "function",
+      "name": "transition_order_status",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 416,
+      "endLine": 444
+    },
+    {
+      "id": "function:agent/database.py:create_session",
+      "type": "function",
+      "name": "create_session",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 447,
+      "endLine": 456
+    },
+    {
+      "id": "function:agent/database.py:get_latest_session_id",
+      "type": "function",
+      "name": "get_latest_session_id",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 459,
+      "endLine": 472
+    },
+    {
+      "id": "function:agent/database.py:session_belongs_to_user",
+      "type": "function",
+      "name": "session_belongs_to_user",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 475,
+      "endLine": 482
+    },
+    {
+      "id": "function:agent/database.py:load_summary",
+      "type": "function",
+      "name": "load_summary",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 485,
+      "endLine": 492
+    },
+    {
+      "id": "function:agent/database.py:save_message",
+      "type": "function",
+      "name": "save_message",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 494,
+      "endLine": 513
+    },
+    {
+      "id": "function:agent/database.py:load_messages",
+      "type": "function",
+      "name": "load_messages",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 516,
+      "endLine": 537
+    },
+    {
+      "id": "function:agent/database.py:delete_messages",
+      "type": "function",
+      "name": "delete_messages",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 540,
+      "endLine": 547
+    },
+    {
+      "id": "function:agent/database.py:replace_messages",
+      "type": "function",
+      "name": "replace_messages",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 550,
+      "endLine": 576
+    },
+    {
+      "id": "function:agent/database.py:update_summary",
+      "type": "function",
+      "name": "update_summary",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 579,
+      "endLine": 592
+    },
+    {
+      "id": "function:agent/database.py:delete_session",
+      "type": "function",
+      "name": "delete_session",
+      "filePath": "agent/database.py",
+      "summary": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 595,
+      "endLine": 608
+    },
+    {
+      "id": "file:agent/presentation.py",
+      "type": "file",
+      "name": "presentation.py",
+      "filePath": "agent/presentation.py",
+      "summary": "Presentation layer that removes internal intent and tool metadata before showing a reply to users.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/presentation.py:visible_reply",
+      "type": "function",
+      "name": "visible_reply",
+      "filePath": "agent/presentation.py",
+      "summary": "Presentation layer that removes internal intent and tool metadata before showing a reply to users.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 22
+    },
+    {
+      "id": "file:agent/rag/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "agent/rag/__init__.py",
+      "summary": "Project file responsible for agent/rag/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:agent/rag/chunker.py",
+      "type": "file",
+      "name": "chunker.py",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 5,
+          "functionCount": 5,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/rag/chunker.py:chunk_markdown",
+      "type": "function",
+      "name": "chunk_markdown",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 6,
+      "endLine": 32
+    },
+    {
+      "id": "function:agent/rag/chunker.py:_chunk_by_h2",
+      "type": "function",
+      "name": "_chunk_by_h2",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 35,
+      "endLine": 49
+    },
+    {
+      "id": "function:agent/rag/chunker.py:_chunk_faq",
+      "type": "function",
+      "name": "_chunk_faq",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 52,
+      "endLine": 80
+    },
+    {
+      "id": "function:agent/rag/chunker.py:chunk_markdown_dir",
+      "type": "function",
+      "name": "chunk_markdown_dir",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 83,
+      "endLine": 88
+    },
+    {
+      "id": "function:agent/rag/chunker.py:save_chunks",
+      "type": "function",
+      "name": "save_chunks",
+      "filePath": "agent/rag/chunker.py",
+      "summary": "Splits Markdown knowledge documents into retrieval-friendly text chunks.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 91,
+      "endLine": 98
+    },
+    {
+      "id": "file:agent/rag/embedder.py",
+      "type": "file",
+      "name": "embedder.py",
+      "filePath": "agent/rag/embedder.py",
+      "summary": "Converts text into embeddings by calling an embedding model.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:agent/rag/embedder.py:Embedder",
+      "type": "class",
+      "name": "Embedder",
+      "filePath": "agent/rag/embedder.py",
+      "summary": "Converts text into embeddings by calling an embedding model.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 6,
+      "endLine": 26
+    },
+    {
+      "id": "file:agent/rag/indexer.py",
+      "type": "file",
+      "name": "indexer.py",
+      "filePath": "agent/rag/indexer.py",
+      "summary": "Builds the knowledge-base vector index from text chunks and embeddings.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/rag/indexer.py:build_index",
+      "type": "function",
+      "name": "build_index",
+      "filePath": "agent/rag/indexer.py",
+      "summary": "Builds the knowledge-base vector index from text chunks and embeddings.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 30
+    },
+    {
+      "id": "file:agent/rag/retriever.py",
+      "type": "file",
+      "name": "retriever.py",
+      "filePath": "agent/rag/retriever.py",
+      "summary": "RAG retriever that returns relevant knowledge chunks from the vector index.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:agent/rag/retriever.py:Retriever",
+      "type": "class",
+      "name": "Retriever",
+      "filePath": "agent/rag/retriever.py",
+      "summary": "RAG retriever that returns relevant knowledge chunks from the vector index.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 8,
+      "endLine": 53
+    },
+    {
+      "id": "file:agent/storage.py",
+      "type": "file",
+      "name": "storage.py",
+      "filePath": "agent/storage.py",
+      "summary": "Persistence helpers for reading and writing chat session data.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 2,
+          "functionCount": 2,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/storage.py:save_messages",
+      "type": "function",
+      "name": "save_messages",
+      "filePath": "agent/storage.py",
+      "summary": "Persistence helpers for reading and writing chat session data.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 8
+    },
+    {
+      "id": "function:agent/storage.py:load_messages",
+      "type": "function",
+      "name": "load_messages",
+      "filePath": "agent/storage.py",
+      "summary": "Persistence helpers for reading and writing chat session data.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 10,
+      "endLine": 16
+    },
+    {
+      "id": "file:agent/summarizer.py",
+      "type": "file",
+      "name": "summarizer.py",
+      "filePath": "agent/summarizer.py",
+      "summary": "Summarizes long conversations to keep future model context smaller.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/summarizer.py:summarize",
+      "type": "function",
+      "name": "summarize",
+      "filePath": "agent/summarizer.py",
+      "summary": "Summarizes long conversations to keep future model context smaller.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 14,
+      "endLine": 37
+    },
+    {
+      "id": "file:agent/tools/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "agent/tools/__init__.py",
+      "summary": "Project file responsible for agent/tools/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:agent/tools/handoff.py",
+      "type": "file",
+      "name": "handoff.py",
+      "filePath": "agent/tools/handoff.py",
+      "summary": "Human support handoff tool that creates and records a ticket.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/handoff.py:create_handoff",
+      "type": "function",
+      "name": "create_handoff",
+      "filePath": "agent/tools/handoff.py",
+      "summary": "Human support handoff tool that creates and records a ticket.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 36
+    },
+    {
+      "id": "file:agent/tools/knowledge.py",
+      "type": "file",
+      "name": "knowledge.py",
+      "filePath": "agent/tools/knowledge.py",
+      "summary": "Project file responsible for agent/tools/knowledge.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/knowledge.py:search_knowledge",
+      "type": "function",
+      "name": "search_knowledge",
+      "filePath": "agent/tools/knowledge.py",
+      "summary": "Function search_knowledge defined in agent/tools/knowledge.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 54
+    },
+    {
+      "id": "file:agent/tools/logistics.py",
+      "type": "file",
+      "name": "logistics.py",
+      "filePath": "agent/tools/logistics.py",
+      "summary": "Logistics tracking lookup tool.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/logistics.py:query_logistics",
+      "type": "function",
+      "name": "query_logistics",
+      "filePath": "agent/tools/logistics.py",
+      "summary": "Logistics tracking lookup tool.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 36
+    },
+    {
+      "id": "file:agent/tools/mock_data.py",
+      "type": "file",
+      "name": "mock_data.py",
+      "filePath": "agent/tools/mock_data.py",
+      "summary": "Project file responsible for agent/tools/mock_data.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:agent/tools/order.py",
+      "type": "file",
+      "name": "order.py",
+      "filePath": "agent/tools/order.py",
+      "summary": "Order lookup and order status tools.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/order.py:query_order",
+      "type": "function",
+      "name": "query_order",
+      "filePath": "agent/tools/order.py",
+      "summary": "Order lookup and order status tools.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 20
+    },
+    {
+      "id": "file:agent/tools/product.py",
+      "type": "file",
+      "name": "product.py",
+      "filePath": "agent/tools/product.py",
+      "summary": "Product search and product detail tools.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/product.py:search_product",
+      "type": "function",
+      "name": "search_product",
+      "filePath": "agent/tools/product.py",
+      "summary": "Product search and product detail tools.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 22
+    },
+    {
+      "id": "file:agent/tools/refund.py",
+      "type": "file",
+      "name": "refund.py",
+      "filePath": "agent/tools/refund.py",
+      "summary": "Refund request and refund status tools.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/refund.py:apply_refund",
+      "type": "function",
+      "name": "apply_refund",
+      "filePath": "agent/tools/refund.py",
+      "summary": "Refund request and refund status tools.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 9,
+      "endLine": 77
+    },
+    {
+      "id": "file:agent/tools/registry.py",
+      "type": "file",
+      "name": "registry.py",
+      "filePath": "agent/tools/registry.py",
+      "summary": "Tool registry and dispatcher for order, product, logistics, refund, and other business tools.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 5,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:agent/tools/registry.py:execute_tool",
+      "type": "function",
+      "name": "execute_tool",
+      "filePath": "agent/tools/registry.py",
+      "summary": "Tool registry and dispatcher for order, product, logistics, refund, and other business tools.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 116,
+      "endLine": 131
+    },
+    {
+      "id": "file:api/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "api/__init__.py",
+      "summary": "Project file responsible for api/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:api/admin_setup.py",
+      "type": "file",
+      "name": "admin_setup.py",
+      "filePath": "api/admin_setup.py",
+      "summary": "Project file responsible for api/admin_setup.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:api/admin_setup.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "api/admin_setup.py",
+      "summary": "Function main defined in api/admin_setup.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 31
+    },
+    {
+      "id": "file:api/auth.py",
+      "type": "file",
+      "name": "auth.py",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 5,
+          "functionCount": 5,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:api/auth.py:register_user",
+      "type": "function",
+      "name": "register_user",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 20,
+      "endLine": 32
+    },
+    {
+      "id": "function:api/auth.py:authenticate_user",
+      "type": "function",
+      "name": "authenticate_user",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 35,
+      "endLine": 44
+    },
+    {
+      "id": "function:api/auth.py:reset_user_password",
+      "type": "function",
+      "name": "reset_user_password",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 47,
+      "endLine": 55
+    },
+    {
+      "id": "function:api/auth.py:create_access_token",
+      "type": "function",
+      "name": "create_access_token",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 58,
+      "endLine": 71
+    },
+    {
+      "id": "function:api/auth.py:decode_access_token",
+      "type": "function",
+      "name": "decode_access_token",
+      "filePath": "api/auth.py",
+      "summary": "Handles user registration, login, password verification, and JWT token creation and decoding.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 74,
+      "endLine": 81
+    },
+    {
+      "id": "file:api/main.py",
+      "type": "file",
+      "name": "main.py",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 5,
+          "exportCount": 34,
+          "functionCount": 29,
+          "classCount": 5
+        }
+      }
+    },
+    {
+      "id": "function:api/main.py:error_body",
+      "type": "function",
+      "name": "error_body",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 48,
+      "endLine": 52
+    },
+    {
+      "id": "function:api/main.py:http_exception_handler",
+      "type": "function",
+      "name": "http_exception_handler",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 56,
+      "endLine": 77
+    },
+    {
+      "id": "function:api/main.py:validation_exception_handler",
+      "type": "function",
+      "name": "validation_exception_handler",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 81,
+      "endLine": 92
+    },
+    {
+      "id": "function:api/main.py:unhandled_exception_handler",
+      "type": "function",
+      "name": "unhandled_exception_handler",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 96,
+      "endLine": 103
+    },
+    {
+      "id": "function:api/main.py:startup",
+      "type": "function",
+      "name": "startup",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 132,
+      "endLine": 133
+    },
+    {
+      "id": "function:api/main.py:health",
+      "type": "function",
+      "name": "health",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 137,
+      "endLine": 138
+    },
+    {
+      "id": "function:api/main.py:list_products",
+      "type": "function",
+      "name": "list_products",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 142,
+      "endLine": 145
+    },
+    {
+      "id": "function:api/main.py:register",
+      "type": "function",
+      "name": "register",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 149,
+      "endLine": 154
+    },
+    {
+      "id": "function:api/main.py:login",
+      "type": "function",
+      "name": "login",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 158,
+      "endLine": 169
+    },
+    {
+      "id": "function:api/main.py:get_current_user",
+      "type": "function",
+      "name": "get_current_user",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 172,
+      "endLine": 196
+    },
+    {
+      "id": "function:api/main.py:require_admin",
+      "type": "function",
+      "name": "require_admin",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 199,
+      "endLine": 202
+    },
+    {
+      "id": "function:api/main.py:me",
+      "type": "function",
+      "name": "me",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 206,
+      "endLine": 207
+    },
+    {
+      "id": "function:api/main.py:admin_summary",
+      "type": "function",
+      "name": "admin_summary",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 211,
+      "endLine": 219
+    },
+    {
+      "id": "function:api/main.py:admin_users",
+      "type": "function",
+      "name": "admin_users",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 223,
+      "endLine": 233
+    },
+    {
+      "id": "function:api/main.py:admin_orders",
+      "type": "function",
+      "name": "admin_orders",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 237,
+      "endLine": 250
+    },
+    {
+      "id": "function:api/main.py:admin_refunds",
+      "type": "function",
+      "name": "admin_refunds",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 254,
+      "endLine": 267
+    },
+    {
+      "id": "function:api/main.py:admin_sessions",
+      "type": "function",
+      "name": "admin_sessions",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 271,
+      "endLine": 286
+    },
+    {
+      "id": "function:api/main.py:admin_session_messages",
+      "type": "function",
+      "name": "admin_session_messages",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 290,
+      "endLine": 325
+    },
+    {
+      "id": "function:api/main.py:list_orders",
+      "type": "function",
+      "name": "list_orders",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 329,
+      "endLine": 330
+    },
+    {
+      "id": "function:api/main.py:get_order_detail",
+      "type": "function",
+      "name": "get_order_detail",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 334,
+      "endLine": 343
+    },
+    {
+      "id": "function:api/main.py:create_new_order",
+      "type": "function",
+      "name": "create_new_order",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 347,
+      "endLine": 369
+    },
+    {
+      "id": "function:api/main.py:cancel_order",
+      "type": "function",
+      "name": "cancel_order",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 373,
+      "endLine": 388
+    },
+    {
+      "id": "function:api/main.py:list_refunds",
+      "type": "function",
+      "name": "list_refunds",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 392,
+      "endLine": 393
+    },
+    {
+      "id": "function:api/main.py:create_order_refund",
+      "type": "function",
+      "name": "create_order_refund",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 397,
+      "endLine": 408
+    },
+    {
+      "id": "function:api/main.py:list_sessions",
+      "type": "function",
+      "name": "list_sessions",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 412,
+      "endLine": 424
+    },
+    {
+      "id": "function:api/main.py:create_new_session",
+      "type": "function",
+      "name": "create_new_session",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 428,
+      "endLine": 433
+    },
+    {
+      "id": "function:api/main.py:list_session_messages",
+      "type": "function",
+      "name": "list_session_messages",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 437,
+      "endLine": 457
+    },
+    {
+      "id": "function:api/main.py:remove_session",
+      "type": "function",
+      "name": "remove_session",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 461,
+      "endLine": 465
+    },
+    {
+      "id": "function:api/main.py:chat",
+      "type": "function",
+      "name": "chat",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 469,
+      "endLine": 472
+    },
+    {
+      "id": "class:api/main.py:Credentials",
+      "type": "class",
+      "name": "Credentials",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 106,
+      "endLine": 108
+    },
+    {
+      "id": "class:api/main.py:ChatRequest",
+      "type": "class",
+      "name": "ChatRequest",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 111,
+      "endLine": 113
+    },
+    {
+      "id": "class:api/main.py:SessionCreateRequest",
+      "type": "class",
+      "name": "SessionCreateRequest",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 116,
+      "endLine": 117
+    },
+    {
+      "id": "class:api/main.py:OrderCreateRequest",
+      "type": "class",
+      "name": "OrderCreateRequest",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 120,
+      "endLine": 124
+    },
+    {
+      "id": "class:api/main.py:RefundCreateRequest",
+      "type": "class",
+      "name": "RefundCreateRequest",
+      "filePath": "api/main.py",
+      "summary": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 127,
+      "endLine": 128
+    },
+    {
+      "id": "service:compose.yaml",
+      "type": "service",
+      "name": "compose.yaml",
+      "filePath": "compose.yaml",
+      "summary": "Docker Compose configuration for the backend, frontend, and supporting services.",
+      "tags": [
+        "deployment"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "yaml",
+        "fileCategory": "infra",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        }
+      }
+    },
+    {
+      "id": "file:config/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "config/__init__.py",
+      "summary": "Project file responsible for config/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:config/settings.py",
+      "type": "file",
+      "name": "settings.py",
+      "filePath": "config/settings.py",
+      "summary": "Loads model, database, and application settings from environment variables.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:config/settings.py:Settings",
+      "type": "class",
+      "name": "Settings",
+      "filePath": "config/settings.py",
+      "summary": "Loads model, database, and application settings from environment variables.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 4,
+      "endLine": 17
+    },
+    {
+      "id": "config:data/chunks.json",
+      "type": "config",
+      "name": "chunks.json",
+      "filePath": "data/chunks.json",
+      "summary": "Project configuration controlling runtime or build behavior.",
+      "tags": [
+        "configuration"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "json",
+        "fileCategory": "config",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 0
+        }
+      }
+    },
+    {
+      "id": "config:data/index.json",
+      "type": "config",
+      "name": "index.json",
+      "filePath": "data/index.json",
+      "summary": "Project configuration controlling runtime or build behavior.",
+      "tags": [
+        "configuration"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "json",
+        "fileCategory": "config",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 0
+        }
+      }
+    },
+    {
+      "id": "document:docs/API鎺ュ彛娓呭崟.md",
+      "type": "document",
+      "name": "Documentation 1",
+      "filePath": "docs/API鎺ュ彛娓呭崟.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "document:docs/RAG娴嬭瘯璁板綍.md",
+      "type": "document",
+      "name": "Documentation 2",
+      "filePath": "docs/RAG娴嬭瘯璁板綍.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "document:docs/swagger.md",
+      "type": "document",
+      "name": "swagger.md",
+      "filePath": "docs/swagger.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 19
+        }
+      }
+    },
+    {
+      "id": "document:docs/鍘嬫祴璁板綍.md",
+      "type": "document",
+      "name": "Documentation 3",
+      "filePath": "docs/鍘嬫祴璁板綍.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "document:docs/瀛︿範璁板綍.md",
+      "type": "document",
+      "name": "Documentation 4",
+      "filePath": "docs/瀛︿範璁板綍.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "document:docs/椤圭洰瀹屽杽璁″垝.md",
+      "type": "document",
+      "name": "Documentation 5",
+      "filePath": "docs/椤圭洰瀹屽杽璁″垝.md",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "service:frontend/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "frontend/Dockerfile",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "deployment"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "dockerfile",
+        "fileCategory": "infra",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "serviceCount": 2,
+          "stepCount": 12
+        }
+      }
+    },
+    {
+      "id": "document:frontend/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "frontend/README.md",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        }
+      }
+    },
+    {
+      "id": "file:frontend/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "frontend/index.html",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "html",
+        "fileCategory": "markup",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "config:frontend/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "frontend/package.json",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "configuration"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "json",
+        "fileCategory": "config",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 7
+        }
+      }
+    },
+    {
+      "id": "file:frontend/src/App.vue",
+      "type": "file",
+      "name": "App.vue",
+      "filePath": "frontend/src/App.vue",
+      "summary": "Main Vue frontend for login, chat, sessions, and admin view switching.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "vue",
+        "fileCategory": "code",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:frontend/src/components/AdminDashboard.vue",
+      "type": "file",
+      "name": "AdminDashboard.vue",
+      "filePath": "frontend/src/components/AdminDashboard.vue",
+      "summary": "Admin dashboard for users, sessions, and business data.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "vue",
+        "fileCategory": "code",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:frontend/src/components/HelloWorld.vue",
+      "type": "file",
+      "name": "HelloWorld.vue",
+      "filePath": "frontend/src/components/HelloWorld.vue",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "vue",
+        "fileCategory": "code",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:frontend/src/main.js",
+      "type": "file",
+      "name": "main.js",
+      "filePath": "frontend/src/main.js",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "javascript",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:frontend/src/style.css",
+      "type": "file",
+      "name": "style.css",
+      "filePath": "frontend/src/style.css",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "complex",
+      "metadata": {
+        "language": "css",
+        "fileCategory": "markup",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:frontend/vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "frontend/vite.config.js",
+      "summary": "Vue 3 frontend file for browser interaction.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "javascript",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "document:knowledge/FAQ.md",
+      "type": "document",
+      "name": "FAQ.md",
+      "filePath": "knowledge/FAQ.md",
+      "summary": "Customer service knowledge document used by RAG retrieval.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 20
+        }
+      }
+    },
+    {
+      "id": "document:knowledge/閫€鎹㈣揣鏀跨瓥.md",
+      "type": "document",
+      "name": "Documentation 6",
+      "filePath": "knowledge/閫€鎹㈣揣鏀跨瓥.md",
+      "summary": "Customer service knowledge document used by RAG retrieval.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "document:knowledge/閰嶉€佽鏄?md",
+      "type": "document",
+      "name": "Documentation 7",
+      "filePath": "knowledge/閰嶉€佽鏄?md",
+      "summary": "Customer service knowledge document used by RAG retrieval.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "markdown",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:locustfile.py",
+      "type": "file",
+      "name": "locustfile.py",
+      "filePath": "locustfile.py",
+      "summary": "Locust load-test script that simulates login and chat requests.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:locustfile.py:EcomApiUser",
+      "type": "class",
+      "name": "EcomApiUser",
+      "filePath": "locustfile.py",
+      "summary": "Locust load-test script that simulates login and chat requests.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 70
+    },
+    {
+      "id": "file:main.py",
+      "type": "file",
+      "name": "main.py",
+      "filePath": "main.py",
+      "summary": "CLI entry point that authenticates the user and starts the customer service conversation loop.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:main.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "main.py",
+      "summary": "CLI entry point that authenticates the user and starts the customer service conversation loop.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 6,
+      "endLine": 28
+    },
+    {
+      "id": "file:mcp_client/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "mcp_client/__init__.py",
+      "summary": "Project file responsible for mcp_client/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:mcp_client/client.py",
+      "type": "file",
+      "name": "client.py",
+      "filePath": "mcp_client/client.py",
+      "summary": "MCP client that connects to the MCP server and discovers callable tools.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:mcp_client/client.py:MCPClient",
+      "type": "class",
+      "name": "MCPClient",
+      "filePath": "mcp_client/client.py",
+      "summary": "MCP client that connects to the MCP server and discovers callable tools.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 12,
+      "endLine": 91
+    },
+    {
+      "id": "file:mcp_client/converter.py",
+      "type": "file",
+      "name": "converter.py",
+      "filePath": "mcp_client/converter.py",
+      "summary": "Project file responsible for mcp_client/converter.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:mcp_client/converter.py:mcp_tools_to_openai",
+      "type": "function",
+      "name": "mcp_tools_to_openai",
+      "filePath": "mcp_client/converter.py",
+      "summary": "Function mcp_tools_to_openai defined in mcp_client/converter.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 1,
+      "endLine": 13
+    },
+    {
+      "id": "file:mcp_client/test_client.py",
+      "type": "file",
+      "name": "test_client.py",
+      "filePath": "mcp_client/test_client.py",
+      "summary": "Project file responsible for mcp_client/test_client.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:mcp_client/test_client.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "mcp_client/test_client.py",
+      "summary": "Function main defined in mcp_client/test_client.py.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 10,
+      "endLine": 29
+    },
+    {
+      "id": "file:mcp_server/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "mcp_server/__init__.py",
+      "summary": "Project file responsible for mcp_server/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:mcp_server/server.py",
+      "type": "file",
+      "name": "server.py",
+      "filePath": "mcp_server/server.py",
+      "summary": "MCP server that exposes order, logistics, refund, and other business capabilities.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "function:mcp_server/server.py:query_order",
+      "type": "function",
+      "name": "query_order",
+      "filePath": "mcp_server/server.py",
+      "summary": "MCP server that exposes order, logistics, refund, and other business capabilities.",
+      "tags": [
+        "function",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 14,
+      "endLine": 21
+    },
+    {
+      "id": "file:prompts/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "prompts/__init__.py",
+      "summary": "Project file responsible for prompts/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:prompts/customer_service.py",
+      "type": "file",
+      "name": "customer_service.py",
+      "filePath": "prompts/customer_service.py",
+      "summary": "Defines the customer service role, response rules, and tool usage constraints.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "Project configuration controlling runtime or build behavior.",
+      "tags": [
+        "configuration"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "toml",
+        "fileCategory": "config",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 2
+        }
+      }
+    },
+    {
+      "id": "document:requirements.txt",
+      "type": "document",
+      "name": "requirements.txt",
+      "filePath": "requirements.txt",
+      "summary": "Project documentation describing usage and implementation details.",
+      "tags": [
+        "documentation"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "txt",
+        "fileCategory": "docs",
+        "metrics": {}
+      }
+    },
+    {
+      "id": "file:schemas/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "schemas/__init__.py",
+      "summary": "Project file responsible for schemas/__init__.py.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:schemas/response.py",
+      "type": "file",
+      "name": "response.py",
+      "filePath": "schemas/response.py",
+      "summary": "Defines the customer service response schema and intent values.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 2,
+          "functionCount": 0,
+          "classCount": 2
+        }
+      }
+    },
+    {
+      "id": "class:schemas/response.py:IntentType",
+      "type": "class",
+      "name": "IntentType",
+      "filePath": "schemas/response.py",
+      "summary": "Defines the customer service response schema and intent values.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 16
+    },
+    {
+      "id": "class:schemas/response.py:CustomerServiceResponse",
+      "type": "class",
+      "name": "CustomerServiceResponse",
+      "filePath": "schemas/response.py",
+      "summary": "Defines the customer service response schema and intent values.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 18,
+      "endLine": 39
+    },
+    {
+      "id": "file:tests/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/__init__.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "file:tests/test_admin_api.py",
+      "type": "file",
+      "name": "test_admin_api.py",
+      "filePath": "tests/test_admin_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_admin_api.py:AdminAPITest",
+      "type": "class",
+      "name": "AdminAPITest",
+      "filePath": "tests/test_admin_api.py",
+      "summary": "Class AdminAPITest defined in tests/test_admin_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "complex",
+      "startLine": 11,
+      "endLine": 133
+    },
+    {
+      "id": "file:tests/test_api_errors.py",
+      "type": "file",
+      "name": "test_api_errors.py",
+      "filePath": "tests/test_api_errors.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_api_errors.py:APIErrorsTest",
+      "type": "class",
+      "name": "APIErrorsTest",
+      "filePath": "tests/test_api_errors.py",
+      "summary": "Class APIErrorsTest defined in tests/test_api_errors.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 80
+    },
+    {
+      "id": "file:tests/test_auth_api.py",
+      "type": "file",
+      "name": "test_auth_api.py",
+      "filePath": "tests/test_auth_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_auth_api.py:AuthAPITest",
+      "type": "class",
+      "name": "AuthAPITest",
+      "filePath": "tests/test_auth_api.py",
+      "summary": "Class AuthAPITest defined in tests/test_auth_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 87
+    },
+    {
+      "id": "file:tests/test_auth_cli.py",
+      "type": "file",
+      "name": "test_auth_cli.py",
+      "filePath": "tests/test_auth_cli.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_auth_cli.py:AuthCLITest",
+      "type": "class",
+      "name": "AuthCLITest",
+      "filePath": "tests/test_auth_cli.py",
+      "summary": "Class AuthCLITest defined in tests/test_auth_cli.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 22
+    },
+    {
+      "id": "file:tests/test_chat_api.py",
+      "type": "file",
+      "name": "test_chat_api.py",
+      "filePath": "tests/test_chat_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 4,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_chat_api.py:ChatAPIResponseTest",
+      "type": "class",
+      "name": "ChatAPIResponseTest",
+      "filePath": "tests/test_chat_api.py",
+      "summary": "Class ChatAPIResponseTest defined in tests/test_chat_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 14,
+      "endLine": 106
+    },
+    {
+      "id": "file:tests/test_chat_mcp_fallback.py",
+      "type": "file",
+      "name": "test_chat_mcp_fallback.py",
+      "filePath": "tests/test_chat_mcp_fallback.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_chat_mcp_fallback.py:ChatMCPFallbackTest",
+      "type": "class",
+      "name": "ChatMCPFallbackTest",
+      "filePath": "tests/test_chat_mcp_fallback.py",
+      "summary": "Class ChatMCPFallbackTest defined in tests/test_chat_mcp_fallback.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 7,
+      "endLine": 21
+    },
+    {
+      "id": "file:tests/test_chat_sqlite.py",
+      "type": "file",
+      "name": "test_chat_sqlite.py",
+      "filePath": "tests/test_chat_sqlite.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_chat_sqlite.py:ChatSQLiteTest",
+      "type": "class",
+      "name": "ChatSQLiteTest",
+      "filePath": "tests/test_chat_sqlite.py",
+      "summary": "Class ChatSQLiteTest defined in tests/test_chat_sqlite.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 10,
+      "endLine": 48
+    },
+    {
+      "id": "file:tests/test_database.py",
+      "type": "file",
+      "name": "test_database.py",
+      "filePath": "tests/test_database.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_database.py:DatabaseTest",
+      "type": "class",
+      "name": "DatabaseTest",
+      "filePath": "tests/test_database.py",
+      "summary": "Class DatabaseTest defined in tests/test_database.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 8,
+      "endLine": 50
+    },
+    {
+      "id": "file:tests/test_error_handling.py",
+      "type": "file",
+      "name": "test_error_handling.py",
+      "filePath": "tests/test_error_handling.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 4,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_error_handling.py:ErrorHandlingTest",
+      "type": "class",
+      "name": "ErrorHandlingTest",
+      "filePath": "tests/test_error_handling.py",
+      "summary": "Class ErrorHandlingTest defined in tests/test_error_handling.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 13,
+      "endLine": 92
+    },
+    {
+      "id": "file:tests/test_mcp_client.py",
+      "type": "file",
+      "name": "test_mcp_client.py",
+      "filePath": "tests/test_mcp_client.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 3,
+          "functionCount": 0,
+          "classCount": 3
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_mcp_client.py:FakeFuture",
+      "type": "class",
+      "name": "FakeFuture",
+      "filePath": "tests/test_mcp_client.py",
+      "summary": "Class FakeFuture defined in tests/test_mcp_client.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 10,
+      "endLine": 15
+    },
+    {
+      "id": "class:tests/test_mcp_client.py:FakeSession",
+      "type": "class",
+      "name": "FakeSession",
+      "filePath": "tests/test_mcp_client.py",
+      "summary": "Class FakeSession defined in tests/test_mcp_client.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 18,
+      "endLine": 20
+    },
+    {
+      "id": "class:tests/test_mcp_client.py:MCPClientTest",
+      "type": "class",
+      "name": "MCPClientTest",
+      "filePath": "tests/test_mcp_client.py",
+      "summary": "Class MCPClientTest defined in tests/test_mcp_client.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 23,
+      "endLine": 63
+    },
+    {
+      "id": "file:tests/test_order_lifecycle.py",
+      "type": "file",
+      "name": "test_order_lifecycle.py",
+      "filePath": "tests/test_order_lifecycle.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_order_lifecycle.py:OrderLifecycleTest",
+      "type": "class",
+      "name": "OrderLifecycleTest",
+      "filePath": "tests/test_order_lifecycle.py",
+      "summary": "Class OrderLifecycleTest defined in tests/test_order_lifecycle.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 99
+    },
+    {
+      "id": "file:tests/test_orders.py",
+      "type": "file",
+      "name": "test_orders.py",
+      "filePath": "tests/test_orders.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 4,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_orders.py:OrdersTest",
+      "type": "class",
+      "name": "OrdersTest",
+      "filePath": "tests/test_orders.py",
+      "summary": "Class OrdersTest defined in tests/test_orders.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 10,
+      "endLine": 78
+    },
+    {
+      "id": "file:tests/test_orders_api.py",
+      "type": "file",
+      "name": "test_orders_api.py",
+      "filePath": "tests/test_orders_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_orders_api.py:OrdersAPITest",
+      "type": "class",
+      "name": "OrdersAPITest",
+      "filePath": "tests/test_orders_api.py",
+      "summary": "Class OrdersAPITest defined in tests/test_orders_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 101
+    },
+    {
+      "id": "file:tests/test_products.py",
+      "type": "file",
+      "name": "test_products.py",
+      "filePath": "tests/test_products.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_products.py:ProductsTest",
+      "type": "class",
+      "name": "ProductsTest",
+      "filePath": "tests/test_products.py",
+      "summary": "Class ProductsTest defined in tests/test_products.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 9,
+      "endLine": 35
+    },
+    {
+      "id": "file:tests/test_products_api.py",
+      "type": "file",
+      "name": "test_products_api.py",
+      "filePath": "tests/test_products_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_products_api.py:ProductsAPITest",
+      "type": "class",
+      "name": "ProductsAPITest",
+      "filePath": "tests/test_products_api.py",
+      "summary": "Class ProductsAPITest defined in tests/test_products_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 27
+    },
+    {
+      "id": "file:tests/test_rag_chunker.py",
+      "type": "file",
+      "name": "test_rag_chunker.py",
+      "filePath": "tests/test_rag_chunker.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "simple",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_rag_chunker.py:RAGChunkerTest",
+      "type": "class",
+      "name": "RAGChunkerTest",
+      "filePath": "tests/test_rag_chunker.py",
+      "summary": "Class RAGChunkerTest defined in tests/test_rag_chunker.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 8,
+      "endLine": 32
+    },
+    {
+      "id": "file:tests/test_refunds_api.py",
+      "type": "file",
+      "name": "test_refunds_api.py",
+      "filePath": "tests/test_refunds_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_refunds_api.py:RefundsAPITest",
+      "type": "class",
+      "name": "RefundsAPITest",
+      "filePath": "tests/test_refunds_api.py",
+      "summary": "Class RefundsAPITest defined in tests/test_refunds_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "moderate",
+      "startLine": 11,
+      "endLine": 103
+    },
+    {
+      "id": "file:tests/test_sessions_api.py",
+      "type": "file",
+      "name": "test_sessions_api.py",
+      "filePath": "tests/test_sessions_api.py",
+      "summary": "Automated test file for project behavior.",
+      "tags": [
+        "code"
+      ],
+      "complexity": "moderate",
+      "metadata": {
+        "language": "python",
+        "fileCategory": "code",
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "class:tests/test_sessions_api.py:SessionsAPITest",
+      "type": "class",
+      "name": "SessionsAPITest",
+      "filePath": "tests/test_sessions_api.py",
+      "summary": "Class SessionsAPITest defined in tests/test_sessions_api.py.",
+      "tags": [
+        "class",
+        "code"
+      ],
+      "complexity": "complex",
+      "startLine": 12,
+      "endLine": 166
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:agent/auth_cli.py",
+      "target": "function:agent/auth_cli.py:read_password",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/auth_cli.py",
+      "target": "function:agent/auth_cli.py:login_or_register",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:agent/auth_cli.py:login_or_register",
+      "target": "function:agent/auth_cli.py:read_password",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 22
+    },
+    {
+      "source": "function:agent/auth_cli.py:login_or_register",
+      "target": "function:agent/auth_cli.py:read_password",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 32
+    },
+    {
+      "source": "function:agent/auth_cli.py:login_or_register",
+      "target": "function:agent/auth_cli.py:read_password",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 33
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "class:agent/chat.py:EcomAgent",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_connection",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:init_db",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:create_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_user_by_username",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_user_by_id",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:set_user_role",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:update_user_password",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_order_for_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:create_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:list_orders_for_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:search_products",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:find_active_refund",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:create_refund",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:list_refunds_for_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:transition_order_status",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:create_session",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:get_latest_session_id",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:session_belongs_to_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:load_summary",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:save_message",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:load_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:delete_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:replace_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:update_summary",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "function:agent/database.py:delete_session",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:agent/database.py:init_db",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 25
+    },
+    {
+      "source": "function:agent/database.py:create_user",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 191
+    },
+    {
+      "source": "function:agent/database.py:get_user_by_username",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 205
+    },
+    {
+      "source": "function:agent/database.py:get_user_by_id",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 219
+    },
+    {
+      "source": "function:agent/database.py:set_user_role",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 236
+    },
+    {
+      "source": "function:agent/database.py:update_user_password",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 247
+    },
+    {
+      "source": "function:agent/database.py:get_order",
+      "target": "function:agent/database.py:get_order_for_user",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 258
+    },
+    {
+      "source": "function:agent/database.py:get_order_for_user",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 262
+    },
+    {
+      "source": "function:agent/database.py:get_order_for_user",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 263
+    },
+    {
+      "source": "function:agent/database.py:create_order",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 289
+    },
+    {
+      "source": "function:agent/database.py:create_order",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 290
+    },
+    {
+      "source": "function:agent/database.py:list_orders_for_user",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 314
+    },
+    {
+      "source": "function:agent/database.py:list_orders_for_user",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 315
+    },
+    {
+      "source": "function:agent/database.py:search_products",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 331
+    },
+    {
+      "source": "function:agent/database.py:search_products",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 332
+    },
+    {
+      "source": "function:agent/database.py:find_active_refund",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 350
+    },
+    {
+      "source": "function:agent/database.py:find_active_refund",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 351
+    },
+    {
+      "source": "function:agent/database.py:create_refund",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 375
+    },
+    {
+      "source": "function:agent/database.py:create_refund",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 376
+    },
+    {
+      "source": "function:agent/database.py:list_refunds_for_user",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 400
+    },
+    {
+      "source": "function:agent/database.py:list_refunds_for_user",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 401
+    },
+    {
+      "source": "function:agent/database.py:transition_order_status",
+      "target": "function:agent/database.py:init_db",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 421
+    },
+    {
+      "source": "function:agent/database.py:transition_order_status",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 422
+    },
+    {
+      "source": "function:agent/database.py:transition_order_status",
+      "target": "function:agent/database.py:get_order_for_user",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 444
+    },
+    {
+      "source": "function:agent/database.py:create_session",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 449
+    },
+    {
+      "source": "function:agent/database.py:get_latest_session_id",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 460
+    },
+    {
+      "source": "function:agent/database.py:session_belongs_to_user",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 476
+    },
+    {
+      "source": "function:agent/database.py:load_summary",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 486
+    },
+    {
+      "source": "function:agent/database.py:save_message",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 495
+    },
+    {
+      "source": "function:agent/database.py:load_messages",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 517
+    },
+    {
+      "source": "function:agent/database.py:delete_messages",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 541
+    },
+    {
+      "source": "function:agent/database.py:replace_messages",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 551
+    },
+    {
+      "source": "function:agent/database.py:update_summary",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 580
+    },
+    {
+      "source": "function:agent/database.py:delete_session",
+      "target": "function:agent/database.py:get_connection",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 596
+    },
+    {
+      "source": "file:agent/presentation.py",
+      "target": "function:agent/presentation.py:visible_reply",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/chunker.py",
+      "target": "function:agent/rag/chunker.py:chunk_markdown",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/chunker.py",
+      "target": "function:agent/rag/chunker.py:_chunk_by_h2",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/chunker.py",
+      "target": "function:agent/rag/chunker.py:_chunk_faq",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/chunker.py",
+      "target": "function:agent/rag/chunker.py:chunk_markdown_dir",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/chunker.py",
+      "target": "function:agent/rag/chunker.py:save_chunks",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:agent/rag/chunker.py:chunk_markdown",
+      "target": "function:agent/rag/chunker.py:_chunk_faq",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 12
+    },
+    {
+      "source": "function:agent/rag/chunker.py:chunk_markdown",
+      "target": "function:agent/rag/chunker.py:_chunk_by_h2",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 14
+    },
+    {
+      "source": "function:agent/rag/chunker.py:chunk_markdown_dir",
+      "target": "function:agent/rag/chunker.py:chunk_markdown",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 87
+    },
+    {
+      "source": "file:agent/rag/embedder.py",
+      "target": "class:agent/rag/embedder.py:Embedder",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/indexer.py",
+      "target": "function:agent/rag/indexer.py:build_index",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/rag/retriever.py",
+      "target": "class:agent/rag/retriever.py:Retriever",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/storage.py",
+      "target": "function:agent/storage.py:save_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/storage.py",
+      "target": "function:agent/storage.py:load_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/summarizer.py",
+      "target": "function:agent/summarizer.py:summarize",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/handoff.py",
+      "target": "function:agent/tools/handoff.py:create_handoff",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/knowledge.py",
+      "target": "function:agent/tools/knowledge.py:search_knowledge",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/logistics.py",
+      "target": "function:agent/tools/logistics.py:query_logistics",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/order.py",
+      "target": "function:agent/tools/order.py:query_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/product.py",
+      "target": "function:agent/tools/product.py:search_product",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/refund.py",
+      "target": "function:agent/tools/refund.py:apply_refund",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "function:agent/tools/registry.py:execute_tool",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/admin_setup.py",
+      "target": "function:api/admin_setup.py:main",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "function:api/auth.py:register_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "function:api/auth.py:authenticate_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "function:api/auth.py:reset_user_password",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "function:api/auth.py:create_access_token",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "function:api/auth.py:decode_access_token",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:error_body",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:http_exception_handler",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:validation_exception_handler",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:unhandled_exception_handler",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:startup",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:health",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:list_products",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:register",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:login",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:get_current_user",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:require_admin",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:me",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_summary",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_users",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_orders",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_refunds",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_sessions",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:admin_session_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:list_orders",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:get_order_detail",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:create_new_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:cancel_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:list_refunds",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:create_order_refund",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:list_sessions",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:create_new_session",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:list_session_messages",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:remove_session",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "function:api/main.py:chat",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "class:api/main.py:Credentials",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "class:api/main.py:ChatRequest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "class:api/main.py:SessionCreateRequest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "class:api/main.py:OrderCreateRequest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "class:api/main.py:RefundCreateRequest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "function:api/main.py:http_exception_handler",
+      "target": "function:api/main.py:error_body",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 75
+    },
+    {
+      "source": "function:api/main.py:validation_exception_handler",
+      "target": "function:api/main.py:error_body",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 87
+    },
+    {
+      "source": "function:api/main.py:unhandled_exception_handler",
+      "target": "function:api/main.py:error_body",
+      "type": "calls",
+      "weight": 0.8,
+      "line": 102
+    },
+    {
+      "source": "file:config/settings.py",
+      "target": "class:config/settings.py:Settings",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:locustfile.py",
+      "target": "class:locustfile.py:EcomApiUser",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:main.py",
+      "target": "function:main.py:main",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:mcp_client/client.py",
+      "target": "class:mcp_client/client.py:MCPClient",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:mcp_client/converter.py",
+      "target": "function:mcp_client/converter.py:mcp_tools_to_openai",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:mcp_client/test_client.py",
+      "target": "function:mcp_client/test_client.py:main",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:mcp_server/server.py",
+      "target": "function:mcp_server/server.py:query_order",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:schemas/response.py",
+      "target": "class:schemas/response.py:IntentType",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:schemas/response.py",
+      "target": "class:schemas/response.py:CustomerServiceResponse",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_admin_api.py",
+      "target": "class:tests/test_admin_api.py:AdminAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_api_errors.py",
+      "target": "class:tests/test_api_errors.py:APIErrorsTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_auth_api.py",
+      "target": "class:tests/test_auth_api.py:AuthAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_auth_cli.py",
+      "target": "class:tests/test_auth_cli.py:AuthCLITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_chat_api.py",
+      "target": "class:tests/test_chat_api.py:ChatAPIResponseTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_chat_mcp_fallback.py",
+      "target": "class:tests/test_chat_mcp_fallback.py:ChatMCPFallbackTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_chat_sqlite.py",
+      "target": "class:tests/test_chat_sqlite.py:ChatSQLiteTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_database.py",
+      "target": "class:tests/test_database.py:DatabaseTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_error_handling.py",
+      "target": "class:tests/test_error_handling.py:ErrorHandlingTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_mcp_client.py",
+      "target": "class:tests/test_mcp_client.py:FakeFuture",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_mcp_client.py",
+      "target": "class:tests/test_mcp_client.py:FakeSession",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_mcp_client.py",
+      "target": "class:tests/test_mcp_client.py:MCPClientTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_order_lifecycle.py",
+      "target": "class:tests/test_order_lifecycle.py:OrderLifecycleTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_orders.py",
+      "target": "class:tests/test_orders.py:OrdersTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_orders_api.py",
+      "target": "class:tests/test_orders_api.py:OrdersAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_products.py",
+      "target": "class:tests/test_products.py:ProductsTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_products_api.py",
+      "target": "class:tests/test_products_api.py:ProductsAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_rag_chunker.py",
+      "target": "class:tests/test_rag_chunker.py:RAGChunkerTest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_refunds_api.py",
+      "target": "class:tests/test_refunds_api.py:RefundsAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_sessions_api.py",
+      "target": "class:tests/test_sessions_api.py:SessionsAPITest",
+      "type": "contains",
+      "weight": 1
+    },
+    {
+      "source": "file:agent/auth_cli.py",
+      "target": "file:api/auth.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:agent/summarizer.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:agent/tools/handoff.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:agent/tools/registry.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:config/settings.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:mcp_client/client.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:prompts/customer_service.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:schemas/response.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/rag/embedder.py",
+      "target": "file:config/settings.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/rag/indexer.py",
+      "target": "file:agent/rag/embedder.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/rag/retriever.py",
+      "target": "file:agent/rag/embedder.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/knowledge.py",
+      "target": "file:agent/rag/retriever.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/logistics.py",
+      "target": "file:agent/tools/order.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/order.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/product.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/refund.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "file:agent/tools/knowledge.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "file:agent/tools/logistics.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "file:agent/tools/order.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "file:agent/tools/product.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tools/registry.py",
+      "target": "file:agent/tools/refund.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/admin_setup.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/admin_setup.py",
+      "target": "file:api/auth.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/auth.py",
+      "target": "file:config/settings.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:agent/chat.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:agent/presentation.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:api/auth.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:config/settings.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/src/main.js",
+      "target": "file:frontend/src/App.vue",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:frontend/src/main.js",
+      "target": "file:frontend/src/style.css",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:main.py",
+      "target": "file:agent/auth_cli.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:main.py",
+      "target": "file:agent/chat.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:main.py",
+      "target": "file:agent/presentation.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:mcp_client/client.py",
+      "target": "file:mcp_client/converter.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:mcp_server/server.py",
+      "target": "file:agent/tools/order.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_admin_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_admin_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_admin_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_api_errors.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_api_errors.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_api_errors.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_auth_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_auth_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_auth_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_auth_cli.py",
+      "target": "file:agent/auth_cli.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_api.py",
+      "target": "file:schemas/response.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_mcp_fallback.py",
+      "target": "file:agent/chat.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_sqlite.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_sqlite.py",
+      "target": "file:agent/chat.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_chat_sqlite.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_database.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_database.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_error_handling.py",
+      "target": "file:agent/chat.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_error_handling.py",
+      "target": "file:agent/tools/handoff.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_error_handling.py",
+      "target": "file:agent/tools/knowledge.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_error_handling.py",
+      "target": "file:schemas/response.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_mcp_client.py",
+      "target": "file:mcp_client/client.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_order_lifecycle.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_order_lifecycle.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_order_lifecycle.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders.py",
+      "target": "file:agent/tools/order.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders.py",
+      "target": "file:agent/tools/refund.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_orders_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products.py",
+      "target": "file:agent/tools/product.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_products_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_rag_chunker.py",
+      "target": "file:agent/rag/chunker.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_refunds_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_refunds_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_refunds_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_sessions_api.py",
+      "target": "file:agent/__init__.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_sessions_api.py",
+      "target": "file:agent/database.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tests/test_sessions_api.py",
+      "target": "file:api/main.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "service:.dockerignore",
+      "target": "file:api/main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:.dockerignore",
+      "target": "file:frontend/src/App.vue",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:.dockerignore",
+      "target": "file:main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:config/settings.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:api/main.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "file:frontend/src/App.vue",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "service:compose.yaml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:.env.example",
+      "target": "config:pyproject.toml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "service:Dockerfile",
+      "target": "file:api/main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:Dockerfile",
+      "target": "file:frontend/src/App.vue",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:Dockerfile",
+      "target": "file:main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "service:compose.yaml",
+      "target": "file:api/main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:compose.yaml",
+      "target": "file:frontend/src/App.vue",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:compose.yaml",
+      "target": "file:main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "config:data/chunks.json",
+      "target": "file:config/settings.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/chunks.json",
+      "target": "file:api/main.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/chunks.json",
+      "target": "file:frontend/src/App.vue",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/chunks.json",
+      "target": "service:compose.yaml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/chunks.json",
+      "target": "config:pyproject.toml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/index.json",
+      "target": "file:config/settings.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/index.json",
+      "target": "file:api/main.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/index.json",
+      "target": "file:frontend/src/App.vue",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/index.json",
+      "target": "service:compose.yaml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:data/index.json",
+      "target": "config:pyproject.toml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "document:docs/API鎺ュ彛娓呭崟.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/API鎺ュ彛娓呭崟.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/API鎺ュ彛娓呭崟.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/API鎺ュ彛娓呭崟.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/RAG娴嬭瘯璁板綍.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/RAG娴嬭瘯璁板綍.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/RAG娴嬭瘯璁板綍.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/RAG娴嬭瘯璁板綍.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/swagger.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/swagger.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/swagger.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/swagger.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/鍘嬫祴璁板綍.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/鍘嬫祴璁板綍.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/鍘嬫祴璁板綍.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/鍘嬫祴璁板綍.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/瀛︿範璁板綍.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/瀛︿範璁板綍.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/瀛︿範璁板綍.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/瀛︿範璁板綍.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/椤圭洰瀹屽杽璁″垝.md",
+      "target": "document:README.md",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/椤圭洰瀹屽杽璁″垝.md",
+      "target": "file:api/main.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/椤圭洰瀹屽杽璁″垝.md",
+      "target": "file:agent/chat.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/椤圭洰瀹屽杽璁″垝.md",
+      "target": "file:agent/rag/retriever.py",
+      "type": "documents",
+      "weight": 0.5
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "file:api/main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "file:frontend/src/App.vue",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "service:frontend/Dockerfile",
+      "target": "file:main.py",
+      "type": "deploys",
+      "weight": 0.5
+    },
+    {
+      "source": "config:frontend/package.json",
+      "target": "file:config/settings.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:frontend/package.json",
+      "target": "file:api/main.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:frontend/package.json",
+      "target": "file:frontend/src/App.vue",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:frontend/package.json",
+      "target": "service:compose.yaml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:frontend/package.json",
+      "target": "config:pyproject.toml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:config/settings.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:api/main.py",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "file:frontend/src/App.vue",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "config:pyproject.toml",
+      "target": "service:compose.yaml",
+      "type": "configures",
+      "weight": 0.6
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_admin_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_api_errors.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_auth_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_chat_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:tests/test_chat_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:tests/test_chat_mcp_fallback.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:agent/chat.py",
+      "target": "file:tests/test_chat_sqlite.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:agent/database.py",
+      "target": "file:tests/test_database.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_orders_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_products_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_refunds_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api/main.py",
+      "target": "file:tests/test_sessions_api.py",
+      "type": "tested_by",
+      "weight": 0.5
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:agent-core",
+      "name": "Agent Core",
+      "description": "Agent orchestration, conversation summaries, presentation, and the CLI entry point.",
+      "nodeIds": [
+        "file:agent/__init__.py",
+        "file:agent/auth_cli.py",
+        "file:agent/chat.py",
+        "file:agent/presentation.py",
+        "file:agent/summarizer.py",
+        "config:data/chunks.json",
+        "config:data/index.json",
+        "file:main.py"
+      ]
+    },
+    {
+      "id": "layer:agent-capabilities",
+      "name": "Tools and Knowledge",
+      "description": "Order, product, logistics, refund, MCP, and RAG capabilities.",
+      "nodeIds": [
+        "file:agent/rag/__init__.py",
+        "file:agent/rag/chunker.py",
+        "file:agent/rag/embedder.py",
+        "file:agent/rag/indexer.py",
+        "file:agent/rag/retriever.py",
+        "file:agent/tools/__init__.py",
+        "file:agent/tools/handoff.py",
+        "file:agent/tools/knowledge.py",
+        "file:agent/tools/logistics.py",
+        "file:agent/tools/mock_data.py",
+        "file:agent/tools/order.py",
+        "file:agent/tools/product.py",
+        "file:agent/tools/refund.py",
+        "file:agent/tools/registry.py",
+        "document:knowledge/FAQ.md",
+        "document:knowledge/閫€鎹㈣揣鏀跨瓥.md",
+        "document:knowledge/閰嶉€佽鏄?md",
+        "file:mcp_client/__init__.py",
+        "file:mcp_client/client.py",
+        "file:mcp_client/converter.py",
+        "file:mcp_client/test_client.py",
+        "file:mcp_server/__init__.py",
+        "file:mcp_server/server.py",
+        "file:prompts/__init__.py",
+        "file:prompts/customer_service.py"
+      ]
+    },
+    {
+      "id": "layer:api",
+      "name": "API Layer",
+      "description": "FastAPI routes, authentication endpoints, and request and response schemas.",
+      "nodeIds": [
+        "file:api/__init__.py",
+        "file:api/admin_setup.py",
+        "file:api/auth.py",
+        "file:api/main.py",
+        "file:schemas/__init__.py",
+        "file:schemas/response.py"
+      ]
+    },
+    {
+      "id": "layer:data-auth",
+      "name": "Data and Auth",
+      "description": "SQLite access, session persistence, and user authentication foundations.",
+      "nodeIds": [
+        "file:agent/database.py",
+        "file:agent/storage.py"
+      ]
+    },
+    {
+      "id": "layer:frontend",
+      "name": "Frontend",
+      "description": "Vue 3 customer chat interface and administrator dashboard.",
+      "nodeIds": [
+        "service:frontend/Dockerfile",
+        "document:frontend/README.md",
+        "file:frontend/index.html",
+        "config:frontend/package.json",
+        "file:frontend/src/App.vue",
+        "file:frontend/src/components/AdminDashboard.vue",
+        "file:frontend/src/components/HelloWorld.vue",
+        "file:frontend/src/main.js",
+        "file:frontend/src/style.css",
+        "file:frontend/vite.config.js"
+      ]
+    },
+    {
+      "id": "layer:test",
+      "name": "Tests",
+      "description": "API, database, Agent, MCP, RAG, and load-test verification.",
+      "nodeIds": [
+        "file:locustfile.py",
+        "file:tests/__init__.py",
+        "file:tests/test_admin_api.py",
+        "file:tests/test_api_errors.py",
+        "file:tests/test_auth_api.py",
+        "file:tests/test_auth_cli.py",
+        "file:tests/test_chat_api.py",
+        "file:tests/test_chat_mcp_fallback.py",
+        "file:tests/test_chat_sqlite.py",
+        "file:tests/test_database.py",
+        "file:tests/test_error_handling.py",
+        "file:tests/test_mcp_client.py",
+        "file:tests/test_order_lifecycle.py",
+        "file:tests/test_orders.py",
+        "file:tests/test_orders_api.py",
+        "file:tests/test_products.py",
+        "file:tests/test_products_api.py",
+        "file:tests/test_rag_chunker.py",
+        "file:tests/test_refunds_api.py",
+        "file:tests/test_sessions_api.py"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation",
+      "description": "Project guides, learning notes, test notes, and knowledge-base documentation.",
+      "nodeIds": [
+        "document:README.md",
+        "document:docs/API鎺ュ彛娓呭崟.md",
+        "document:docs/RAG娴嬭瘯璁板綍.md",
+        "document:docs/swagger.md",
+        "document:docs/鍘嬫祴璁板綍.md",
+        "document:docs/瀛︿範璁板綍.md",
+        "document:docs/椤圭洰瀹屽杽璁″垝.md"
+      ]
+    },
+    {
+      "id": "layer:configuration",
+      "name": "Configuration",
+      "description": "Python dependencies, environment variables, editor settings, and runtime configuration.",
+      "nodeIds": [
+        "config:.env.example",
+        "file:config/__init__.py",
+        "file:config/settings.py",
+        "config:pyproject.toml",
+        "document:requirements.txt"
+      ]
+    },
+    {
+      "id": "layer:infrastructure",
+      "name": "Infrastructure",
+      "description": "Docker images, Compose orchestration, and Understand Anything analysis artifacts.",
+      "nodeIds": [
+        "service:.dockerignore",
+        "file:.ua/.understandignore",
+        "service:Dockerfile",
+        "service:compose.yaml"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Start with the project guide",
+      "description": "Project guide covering local startup, Docker startup, configuration, and API entry points.",
+      "nodeIds": [
+        "document:README.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "CLI startup",
+      "description": "CLI entry point that authenticates the user and starts the customer service conversation loop.",
+      "nodeIds": [
+        "file:main.py"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "FastAPI API layer",
+      "description": "FastAPI application entry point for authentication, chat, sessions, orders, products, refunds, and admin APIs.",
+      "nodeIds": [
+        "file:api/main.py"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Agent core loop",
+      "description": "Core Agent orchestration layer for context, model calls, tool calls, RAG retrieval, and human handoff.",
+      "nodeIds": [
+        "file:agent/chat.py"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Tool dispatch",
+      "description": "Tool registry and dispatcher for order, product, logistics, refund, and other business tools.",
+      "nodeIds": [
+        "file:agent/tools/registry.py"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Data and memory",
+      "description": "SQLite data access layer for users, orders, products, refunds, sessions, and messages.",
+      "nodeIds": [
+        "file:agent/database.py"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "RAG retrieval",
+      "description": "RAG retriever that returns relevant knowledge chunks from the vector index.",
+      "nodeIds": [
+        "file:agent/rag/retriever.py"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "Vue frontend",
+      "description": "Main Vue frontend for login, chat, sessions, and admin view switching.",
+      "nodeIds": [
+        "file:frontend/src/App.vue"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Docker startup",
+      "description": "Docker Compose configuration for the backend, frontend, and supporting services.",
+      "nodeIds": [
+        "service:compose.yaml"
+      ]
+    }
+  ]
+}

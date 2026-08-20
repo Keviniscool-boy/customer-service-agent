@@ -49,6 +49,14 @@ flowchart LR
     A --> AD[管理员接口]
 ```
 
+这张图是项目的简化架构，方便快速了解整体组成。完整的文件、模块和依赖关系由 Understand Anything 生成，图谱数据在 [`.ua/knowledge-graph.json`](.ua/knowledge-graph.json)。
+
+本地查看交互式图谱：
+
+```text
+/understand-dashboard C:\Users\Kevin\Desktop\agent\ecom-service-agent-learning
+```
+
 ### 一次聊天的流程
 
 ```text
