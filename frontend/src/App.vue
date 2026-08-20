@@ -15,6 +15,8 @@ const user = ref(storedUser ? JSON.parse(storedUser) : null)
 const authenticated = ref(Boolean(localStorage.getItem('xiaojie_token') && user.value))
 
 const sessions = ref([])
+const agents = ref([])
+const activeAgentId = ref(localStorage.getItem('xiaojie_agent_id') || 'ecom-default')
 const activeSessionId = ref(null)
 const chatMessages = ref([])
 const draft = ref('')
@@ -28,6 +30,12 @@ const isLogin = computed(() => mode.value === 'login')
 const isLoggedIn = computed(() => authenticated.value && Boolean(user.value))
 const isAdmin = computed(() => isLoggedIn.value && user.value.role === 'admin')
 const activeSession = computed(() => sessions.value.find((session) => session.id === activeSessionId.value))
+const activeAgent = computed(() => agents.value.find((agent) => agent.agent_id === activeAgentId.value) || {
+  agent_id: 'ecom-default',
+  name: '小极',
+  role: '极客商城智能客服',
+  welcome_message: '您好，我是极客商城智能客服小极，很高兴为您服务！',
+})
 
 function visibleReply(payload) {
   let value = typeof payload === 'string' ? payload : payload?.reply
@@ -98,8 +106,7 @@ async function submitForm() {
       user.value = data.user
       authenticated.value = true
       setMessage('登录成功。', 'success')
-      // 登录成功先进入聊天页，会话历史在页面内继续加载。
-      loadSessions()
+      await loadAgents()
     } else {
       setMessage('注册成功，请使用新账号登录。', 'success')
       mode.value = 'login'
@@ -117,7 +124,9 @@ async function loadSessions() {
   workspaceError.value = ''
   try {
     const data = await apiRequest('/sessions')
-    sessions.value = data.sessions || []
+    sessions.value = (data.sessions || []).filter(
+      (session) => session.agent_id === activeAgentId.value,
+    )
     if (!sessions.value.length) {
       await createSession()
     } else {
@@ -131,15 +140,37 @@ async function loadSessions() {
   }
 }
 
+async function loadAgents() {
+  try {
+    const data = await apiRequest('/agents')
+    agents.value = data.agents || []
+    if (!agents.value.some((agent) => agent.agent_id === activeAgentId.value)) {
+      activeAgentId.value = agents.value[0]?.agent_id || 'ecom-default'
+    }
+    localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
+    await loadSessions()
+  } catch (error) {
+    workspaceError.value = error.message
+  }
+}
+
+async function changeAgent() {
+  activeSessionId.value = null
+  chatMessages.value = []
+  localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
+  await loadSessions()
+}
+
 async function createSession() {
   try {
     const data = await apiRequest('/sessions', {
       method: 'POST',
-      body: JSON.stringify({ title: '新对话' }),
+      body: JSON.stringify({ title: '新对话', agent_id: activeAgentId.value }),
     })
     const newSession = {
       id: data.session_id,
       title: data.title || '新对话',
+      agent_id: activeAgentId.value,
       summary: null,
     }
     sessions.value = [newSession, ...sessions.value]
@@ -181,7 +212,11 @@ async function sendMessage() {
   try {
     const data = await apiRequest('/chat', {
       method: 'POST',
-      body: JSON.stringify({ message: content, session_id: activeSessionId.value }),
+      body: JSON.stringify({
+        message: content,
+        session_id: activeSessionId.value,
+        agent_id: activeAgentId.value,
+      }),
     })
     const reply = visibleReply(data)
     chatMessages.value.push({ role: 'assistant', content: reply || '暂时没有收到回复。' })
@@ -213,6 +248,7 @@ function logout() {
   user.value = null
   authenticated.value = false
   sessions.value = []
+  agents.value = []
   activeSessionId.value = null
   chatMessages.value = []
   username.value = ''
@@ -222,7 +258,7 @@ function logout() {
 }
 
 onMounted(() => {
-  if (isLoggedIn.value) loadSessions()
+  if (isLoggedIn.value) loadAgents()
 })
 </script>
 
@@ -242,6 +278,15 @@ onMounted(() => {
       <button class="new-chat-button" type="button" :disabled="sessionsLoading" @click="createSession">
         <span aria-hidden="true">+</span> 新建会话
       </button>
+
+      <label class="agent-picker">
+        <span>当前 Agent</span>
+        <select v-model="activeAgentId" :disabled="sessionsLoading" @change="changeAgent">
+          <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">
+            {{ agent.name }}
+          </option>
+        </select>
+      </label>
 
       <div class="session-heading">
         <span>最近会话</span>
@@ -276,7 +321,7 @@ onMounted(() => {
       <header class="chat-header">
         <div>
           <p class="eyebrow">CUSTOMER SERVICE AGENT</p>
-          <h1>{{ activeSession?.title || '新对话' }}</h1>
+          <h1>{{ activeSession?.title || activeAgent.name }}</h1>
         </div>
         <span class="online-status"><i></i> 在线</span>
       </header>
@@ -285,9 +330,9 @@ onMounted(() => {
         <div v-if="messagesLoading" class="loading-state">正在读取会话...</div>
         <template v-else>
           <div v-if="!chatMessages.length" class="welcome-state">
-            <div class="welcome-mark">极</div>
+            <div class="welcome-mark">{{ activeAgent.name.slice(0, 1) }}</div>
             <h2>你好，{{ user.username }}</h2>
-            <p>我是小极，可以帮你查询订单、物流、商品和售后问题。</p>
+            <p>{{ activeAgent.welcome_message }}</p>
             <div class="suggestion-list">
               <button type="button" @click="draft = '查询我的订单'">查询我的订单</button>
               <button type="button" @click="draft = '我的订单到哪里了？'">查询物流</button>
@@ -301,7 +346,7 @@ onMounted(() => {
             class="message-row"
             :class="item.role === 'user' ? 'from-user' : 'from-agent'"
           >
-            <div v-if="item.role !== 'user'" class="message-avatar">极</div>
+            <div v-if="item.role !== 'user'" class="message-avatar">{{ activeAgent.name.slice(0, 1) }}</div>
             <div class="message-bubble">{{ item.content }}</div>
             <div v-if="item.role === 'user'" class="message-avatar user-message-avatar">{{ user.username.slice(0, 1).toUpperCase() }}</div>
           </div>

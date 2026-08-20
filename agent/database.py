@@ -3,7 +3,10 @@ import sqlite3
 from pathlib import Path
 from uuid import uuid4
 
-DB_PATH = Path("data/app.db")
+from config.settings import settings
+
+
+DB_PATH = Path(settings.database_path)
 
 ORDER_STATUS_TRANSITIONS = {
     "待发货": {"已发货", "已取消"},
@@ -17,8 +20,12 @@ ORDER_STATUS_TRANSITIONS = {
 def get_connection():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(DB_PATH, timeout=10)
     connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute("PRAGMA busy_timeout = 5000")
+    connection.execute("PRAGMA journal_mode = WAL")
+    connection.execute("PRAGMA synchronous = NORMAL")
     return connection
 
 def init_db():
@@ -28,6 +35,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
+            agent_id TEXT NOT NULL DEFAULT 'ecom-default',
             title TEXT,
             summary TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -110,6 +118,10 @@ def init_db():
         row["name"]
         for row in connection.execute("PRAGMA table_info(sessions)")
     }
+    if "agent_id" not in session_columns:
+        connection.execute(
+            "ALTER TABLE sessions ADD COLUMN agent_id TEXT NOT NULL DEFAULT 'ecom-default'"
+        )
     if "title" not in session_columns:
         connection.execute("ALTER TABLE sessions ADD COLUMN title TEXT")
 
@@ -119,6 +131,18 @@ def init_db():
     }
     if "message_json" not in columns:
         connection.execute("ALTER TABLE messages ADD COLUMN message_json TEXT")
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_sessions_user_agent_updated
+        ON sessions (user_id, agent_id, updated_at DESC)
+        """
+    )
+    connection.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_messages_session_id
+        ON messages (session_id, id)
+        """
+    )
     order_count = connection.execute(
         "SELECT COUNT(*) AS count FROM orders"
     ).fetchone()["count"]
@@ -444,40 +468,53 @@ def transition_order_status(
     return get_order_for_user(order_id, user_id)
 
 
-def create_session(user_id: str, title: str | None = None) -> str:
+def create_session(
+    user_id: str,
+    title: str | None = None,
+    agent_id: str = "ecom-default",
+) -> str:
     session_id = str(uuid4())
     connection = get_connection()
     connection.execute(
-        "INSERT INTO sessions (id, user_id, title) VALUES (?, ?, ?)",
-        (session_id, user_id, title),
+        "INSERT INTO sessions (id, user_id, agent_id, title) VALUES (?, ?, ?, ?)",
+        (session_id, user_id, agent_id, title),
     )
     connection.commit()
     connection.close()
     return session_id
 
 
-def get_latest_session_id(user_id: str) -> str | None:
+def get_latest_session_id(
+    user_id: str,
+    agent_id: str = "ecom-default",
+) -> str | None:
     connection = get_connection()
     row = connection.execute(
         """
         SELECT id
         FROM sessions
-        WHERE user_id = ?
+        WHERE user_id = ? AND agent_id = ?
         ORDER BY updated_at DESC, created_at DESC
         LIMIT 1
         """,
-        (user_id,),
+        (user_id, agent_id),
     ).fetchone()
     connection.close()
     return row["id"] if row else None
 
 
-def session_belongs_to_user(session_id: str, user_id: str) -> bool:
+def session_belongs_to_user(
+    session_id: str,
+    user_id: str,
+    agent_id: str | None = None,
+) -> bool:
     connection = get_connection()
-    row = connection.execute(
-        "SELECT 1 FROM sessions WHERE id = ? AND user_id = ?",
-        (session_id, user_id),
-    ).fetchone()
+    query = "SELECT 1 FROM sessions WHERE id = ? AND user_id = ?"
+    params: tuple[str, ...] = (session_id, user_id)
+    if agent_id is not None:
+        query += " AND agent_id = ?"
+        params += (agent_id,)
+    row = connection.execute(query, params).fetchone()
     connection.close()
     return row is not None
 

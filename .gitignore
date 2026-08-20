@@ -8,3 +8,8 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 .idea/
+.ua/.understandignore
+.ua/fingerprints.json
+.ua/meta.json
+.ua/intermediate/
+.ua/tmp/

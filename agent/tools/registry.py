@@ -1,9 +1,75 @@
+"""工具定义、注册和执行。"""
+
+from collections.abc import Callable, Mapping
+
+from agent.tools.knowledge import make_search_knowledge, search_knowledge
 from agent.tools.logistics import query_logistics
 from agent.tools.order import query_order
 from agent.tools.product import search_product
 from agent.tools.refund import apply_refund
-from agent.tools.knowledge import search_knowledge
-    
+
+
+ToolFunction = Callable[..., object]
+
+
+class ToolRegistry:
+    """保存工具的模型定义和实际执行函数。"""
+
+    def __init__(self):
+        self._definitions: dict[str, dict] = {}
+        self._functions: dict[str, ToolFunction] = {}
+        self._user_scoped: set[str] = set()
+
+    def register(
+        self,
+        definition: dict,
+        function: ToolFunction,
+        *,
+        user_scoped: bool = False,
+    ) -> None:
+        function_data = definition.get("function", {})
+        name = function_data.get("name")
+        if not name:
+            raise ValueError("工具定义缺少 function.name")
+        if name in self._definitions:
+            raise ValueError(f"工具已注册：{name}")
+
+        self._definitions[name] = definition
+        self._functions[name] = function
+        if user_scoped:
+            self._user_scoped.add(name)
+
+    def get_definitions(
+        self,
+        enabled_names: set[str] | None = None,
+    ) -> list[dict]:
+        if enabled_names is None:
+            return list(self._definitions.values())
+        return [
+            definition
+            for name, definition in self._definitions.items()
+            if name in enabled_names
+        ]
+
+    def execute(
+        self,
+        name: str,
+        arguments: Mapping[str, object],
+        user_id: str | None = None,
+    ) -> object:
+        function = self._functions.get(name)
+        if function is None:
+            return {
+                "success": False,
+                "message": f"没有找到工具函数{name}",
+            }
+
+        call_arguments = dict(arguments)
+        if user_id and name in self._user_scoped:
+            call_arguments["user_id"] = user_id
+        return function(**call_arguments)
+
+
 TOOL_DEFINITIONS = [
     {
         "type": "function",
@@ -106,6 +172,7 @@ TOOL_DEFINITIONS = [
         },
     },
 ]
+
 TOOL_FUNCTIONS = {
     "query_order": query_order,
     "query_logistics": query_logistics,
@@ -113,19 +180,63 @@ TOOL_FUNCTIONS = {
     "apply_refund": apply_refund,
     "search_knowledge": search_knowledge,
 }
-def execute_tool(name, arguments, user_id: str | None = None):
-    function = TOOL_FUNCTIONS.get(name)
-    """
-    执行工具函数
-    :param name: 工具函数名称
-    :param arguments: 工具函数参数字典
-    :return: 工具函数返回值
-    """
-    if function is None:
-        return {
-            "success": False,
-            "message": f"没有找到工具函数{name}",
-        }
-    if user_id and name in {"query_order", "query_logistics", "apply_refund"}:
-        arguments = {**arguments, "user_id": user_id}
-    return function(**arguments)
+USER_SCOPED_TOOLS = {"query_order", "query_logistics", "apply_refund"}
+
+
+def _resolve_knowledge_index_path(knowledge_base_path: str | None):
+    if not knowledge_base_path or knowledge_base_path == "knowledge":
+        return "data/index.json"
+
+    path = Path(knowledge_base_path)
+    if path.suffix.lower() == ".json":
+        return path
+    return path / "index.json"
+
+
+def get_default_registry(
+    knowledge_base_path: str | None = None,
+) -> ToolRegistry:
+    """创建一份默认工具注册表，避免不同 Agent 互相修改配置。"""
+
+    registry = ToolRegistry()
+    knowledge_tool = search_knowledge
+    index_path = _resolve_knowledge_index_path(knowledge_base_path)
+    if index_path != "data/index.json":
+        knowledge_tool = make_search_knowledge(index_path)
+    for definition in TOOL_DEFINITIONS:
+        name = definition["function"]["name"]
+        registry.register(
+            definition,
+            knowledge_tool if name == "search_knowledge" else TOOL_FUNCTIONS[name],
+            user_scoped=name in USER_SCOPED_TOOLS,
+        )
+    return registry
+
+
+def register_tool(
+    definition: dict,
+    function: ToolFunction,
+    *,
+    user_scoped: bool = False,
+) -> None:
+    """向默认注册表增加工具，供 2.0 扩展使用。"""
+
+    name = definition.get("function", {}).get("name")
+    if not name:
+        raise ValueError("工具定义缺少 function.name")
+    if name in TOOL_FUNCTIONS:
+        raise ValueError(f"工具已注册：{name}")
+    TOOL_DEFINITIONS.append(definition)
+    TOOL_FUNCTIONS[name] = function
+    if user_scoped:
+        USER_SCOPED_TOOLS.add(name)
+
+
+def execute_tool(
+    name: str,
+    arguments: Mapping[str, object],
+    user_id: str | None = None,
+) -> object:
+    """兼容 1.0 的工具执行入口。"""
+
+    return get_default_registry().execute(name, arguments, user_id=user_id)

@@ -10,6 +10,8 @@ services:
     volumes:
       - ./data:/app/data
       - ./sessions:/app/sessions
+      - ./configs:/app/configs
+      - ./knowledge:/app/knowledge
     restart: unless-stopped
 
   frontend:

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from openai import OpenAI
 
@@ -14,30 +15,52 @@ from agent.database import (
 )
 from agent.summarizer import summarize
 from agent.tools.handoff import create_handoff
-from agent.tools.registry import TOOL_DEFINITIONS, execute_tool
+from agent.tools.registry import ToolRegistry, get_default_registry
+from config.agent_config import AgentConfig, get_default_ecom_agent_config
 from config.settings import settings
 from mcp_client.client import MCPClient
-from prompts.customer_service import SYSTEM_PROMPT
+from prompts.builder import build_system_prompt
 from schemas.response import CustomerServiceResponse, IntentType
 
 
+logger = logging.getLogger(__name__)
+
+
 class EcomAgent:
-    def __init__(self, user_id: str = "default-user", session_id: str | None = None):
+    def __init__(
+        self,
+        user_id: str = "default-user",
+        session_id: str | None = None,
+        agent_config: AgentConfig | None = None,
+        tool_registry: ToolRegistry | None = None,
+    ):
         init_db()
         self.user_id = user_id
-        if session_id and not session_belongs_to_user(session_id, user_id):
+        self.agent_config = agent_config or get_default_ecom_agent_config()
+        self.tool_registry = tool_registry or get_default_registry(
+            self.agent_config.knowledge_base_path
+        )
+        if session_id and not session_belongs_to_user(
+            session_id,
+            user_id,
+            self.agent_config.agent_id,
+        ):
             raise ValueError("当前用户无权访问这个会话")
         self.session_id = (
             session_id
-            or get_latest_session_id(user_id)
-            or create_session(user_id)
+            or get_latest_session_id(user_id, self.agent_config.agent_id)
+            or create_session(user_id, agent_id=self.agent_config.agent_id)
         )
         self.client = OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
         )
-        self.model = settings.model_name
-        self.temperature = settings.temperature
+        self.model = self.agent_config.model_name or settings.model_name
+        self.temperature = (
+            self.agent_config.temperature
+            if self.agent_config.temperature is not None
+            else settings.temperature
+        )
         self.history_threshold = 10
         self.history_keep_recent = 3
         self.max_steps = 5
@@ -50,21 +73,33 @@ class EcomAgent:
         except Exception as error:
             mcp_tools = []
             self.mcp_available = False
-            print(
-                f"[MCP] 连接失败，已切换本地工具：{type(error).__name__}"
+            logger.warning(
+                "MCP 连接失败，已切换本地工具：%s",
+                type(error).__name__,
             )
 
+        enabled_tools = set(self.agent_config.enabled_tools)
+        mcp_tools = [
+            tool
+            for tool in mcp_tools
+            if tool["function"]["name"] in enabled_tools
+        ]
+        local_tools = self.tool_registry.get_definitions(enabled_tools)
         self.mcp_tool_names = {
             tool["function"]["name"] for tool in mcp_tools
         }
         self.tool_definitions = [
             tool
-            for tool in TOOL_DEFINITIONS
+            for tool in local_tools
             if tool["function"]["name"] not in self.mcp_tool_names
         ] + mcp_tools
+        self.system_prompt = build_system_prompt(
+            self.agent_config,
+            self.tool_definitions,
+        )
 
         self.messages: list[dict] = [
-            {"role": "system", "content": SYSTEM_PROMPT}
+            {"role": "system", "content": self.system_prompt}
         ]
 
         saved_messages = load_messages(self.session_id)
@@ -137,7 +172,7 @@ class EcomAgent:
                             {**tool_arguments, "user_id": self.user_id},
                         )
                     else:
-                        tool_result = execute_tool(
+                        tool_result = self.tool_registry.execute(
                             tool_name,
                             tool_arguments,
                             user_id=self.user_id,
@@ -197,8 +232,9 @@ class EcomAgent:
             try:
                 self._compress_history()
             except Exception as error:
-                print(
-                    f"[SUMMARY] 压缩失败，保留原对话：{type(error).__name__}"
+                logger.warning(
+                    "摘要压缩失败，保留原对话：%s",
+                    type(error).__name__,
                 )
 
         self._save_to_database()
@@ -210,7 +246,10 @@ class EcomAgent:
         message_count_before_chat: int,
     ) -> CustomerServiceResponse:
         self.messages = self.messages[:message_count_before_chat]
-        print(f"[MODEL] 调用失败，返回降级回复：{type(error).__name__}")
+        logger.warning(
+            "模型调用失败，返回降级回复：%s",
+            type(error).__name__,
+        )
         return CustomerServiceResponse(
             intent=IntentType.OTHER,
             confidence=0.0,
@@ -246,7 +285,7 @@ class EcomAgent:
     def reset(self):
         self.summary = None
         self.messages = [
-            {"role": "system", "content": SYSTEM_PROMPT}
+            {"role": "system", "content": self.system_prompt}
         ]
         replace_messages(self.session_id, [])
         update_summary(self.session_id, None)
@@ -280,7 +319,7 @@ class EcomAgent:
         )
 
         self.messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self.system_prompt},
             {"role": "system", "content": f"历史摘要：{self.summary}"},
             *recent_messages,
         ]

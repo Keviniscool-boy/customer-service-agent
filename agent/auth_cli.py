@@ -1,9 +1,10 @@
+from getpass import getpass
+
 from api.auth import authenticate_user, register_user
 
 
 def read_password(prompt: str = "密码：") -> str:
-    # 学习版 CLI 兼容 VSCode 和 PowerShell，密码输入会显示。
-    return input(prompt)
+    return getpass(prompt)
 
 
 def login_or_register() -> dict | None:

@@ -54,6 +54,10 @@ class SessionsAPITest(unittest.TestCase):
                         listed.json()["sessions"][0]["title"],
                         "订单咨询",
                     )
+                    self.assertEqual(
+                        listed.json()["sessions"][0]["agent_id"],
+                        "ecom-default",
+                    )
 
                     database.save_message(
                         session_id,
