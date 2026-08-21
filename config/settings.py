@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic_settings import BaseSettings
 
 
@@ -12,6 +14,8 @@ class Settings(BaseSettings):
     weknora_api_key: str = ""
     weknora_timeout_seconds: float = 10.0
     weknora_embedding_model_id: str = ""
+    knowledge_provider: Literal["local", "weknora"] = "weknora"
+    weknora_knowledge_base_id: str = ""
     database_path: str = "data/app.db"
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"

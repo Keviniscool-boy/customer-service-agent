@@ -23,7 +23,7 @@
 | 后端 | Python 3.11、FastAPI、Uvicorn | HTTP API 和服务启动 |
 | Agent | OpenAI 兼容 SDK、Pydantic | 调用模型和校验结构化回复 |
 | 工具 | Function Calling、MCP 2.0 | 让模型决定是否调用业务工具 |
-| 知识库 | Markdown、Embedding、JSON 索引 | RAG 文档切片、向量检索 |
+| 知识库 | WeKnora | 文档解析、切片、向量化、混合检索和知识库管理 |
 | 数据库 | SQLite | 用户、订单、退款、会话和消息 |
 | 鉴权 | JWT、Argon2 密码哈希 | 登录和接口权限控制 |
 | 前端 | Vue 3、Vite | 用户聊天页面和管理员后台 |
@@ -42,8 +42,8 @@ flowchart LR
     C --> T[本地工具]
     C --> MC[MCP Client]
     MC --> MS[MCP Server]
-    C --> R[RAG 检索]
-    R --> K[(知识库索引)]
+    C --> R[WeKnora 检索]
+    R --> K[(WeKnora 知识库)]
     C --> D[(SQLite)]
     A --> D
     A --> AD[管理员接口]
@@ -83,9 +83,23 @@ flowchart LR
 
 Agent 启动时会尝试连接 `MCP Server`。如果 MCP 没有启动，Agent 会自动使用本地工具继续运行。当前 MCP Server 示例只暴露了订单查询工具。
 
-## 4. RAG 知识库
+## 4. WeKnora 知识库
 
-知识库文档放在 `knowledge` 目录：
+2.0 默认使用 WeKnora。WeKnora 负责文档解析、切片、向量化、混合检索和知识库管理，当前项目只负责调用它的接口。
+
+管理员或 Agent 所有者可以在页面上传 Markdown。第一次上传时，如果没有填写知识库 ID，系统会自动创建 WeKnora 知识库；之后通过保存的知识库 ID 查询。
+
+WeKnora 独立运行在 `C:\Users\Kevin\Desktop\agent\WeKnora-standalone`，服务地址默认是 `http://127.0.0.1:8080`。它自己的 PostgreSQL、Redis 和文档解析服务由 WeKnora Compose 管理。
+
+### 离线备用方案
+
+如果暂时不启动 WeKnora，可以在 `.env` 中设置：
+
+```text
+KNOWLEDGE_PROVIDER=local
+```
+
+本地备用方案的文档放在 `knowledge` 目录：
 
 ```text
 knowledge/
@@ -94,7 +108,7 @@ knowledge/
 └─ 退换货政策.md
 ```
 
-更新文档后重新生成切片和索引：
+更新本地备用文档后重新生成切片和索引：
 
 ```powershell
 uv run python -m agent.rag.chunker
@@ -112,7 +126,7 @@ Markdown 文档
   -> 把相关片段交给 Agent
 ```
 
-当前使用 JSON 文件和余弦相似度，适合学习和小规模知识库。大型知识库后续可以换成向量数据库。
+本地方案只作为离线学习备用。正式使用时优先继续使用 WeKnora，不需要在当前项目里重复实现一套向量数据库。
 
 ## 5. Agent 配置和权限
 
@@ -165,6 +179,11 @@ Copy-Item .env.example .env
 | `EMBEDDING_MODEL` | RAG 使用的向量模型 |
 | `JWT_SECRET` | JWT 签名密钥 |
 | `MCP_SERVER_URL` | MCP 服务地址，不启动 MCP 时可保持默认值 |
+| `WEKNORA_BASE_URL` | WeKnora 后端地址 |
+| `WEKNORA_API_KEY` | WeKnora API Key，只保存在后端环境变量 |
+| `WEKNORA_EMBEDDING_MODEL_ID` | 自动创建 WeKnora 知识库时使用的向量模型 ID |
+| `KNOWLEDGE_PROVIDER` | 默认知识库服务，推荐 `weknora`，离线时可用 `local` |
+| `WEKNORA_KNOWLEDGE_BASE_ID` | 已有 WeKnora 知识库 ID，留空则首次上传时自动创建 |
 | `CORS_ORIGINS` | 允许访问后端的前端地址，多个地址用英文逗号分隔 |
 
 `.env`、数据库、会话文件和日志不要上传到 GitHub。

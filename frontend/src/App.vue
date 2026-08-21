@@ -65,6 +65,8 @@ function createEmptyAgentForm() {
     custom_prompt: '',
     behavior_rules: '',
     forbidden_topics: '',
+    knowledge_provider: 'weknora',
+    knowledge_base_id: '',
     model_name: '',
     temperature: '',
   }
@@ -223,6 +225,8 @@ async function editOwnedAgent(agentId) {
       custom_prompt: config.custom_prompt || '',
       behavior_rules: (config.behavior_rules || []).join('\n'),
       forbidden_topics: (config.forbidden_topics || []).join('\n'),
+      knowledge_provider: config.knowledge_provider || 'weknora',
+      knowledge_base_id: config.knowledge_base_id || '',
       model_name: config.model_name || '',
       temperature: config.temperature ?? '',
     }
@@ -282,6 +286,8 @@ async function saveUserAgent() {
       behavior_rules: form.behavior_rules.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
       forbidden_topics: form.forbidden_topics.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
       enabled_tools: ['search_knowledge'],
+      knowledge_provider: form.knowledge_provider,
+      knowledge_base_id: form.knowledge_base_id.trim() || null,
       model_name: form.model_name.trim() || null,
       temperature: form.temperature === '' ? null : Number(form.temperature),
     }
@@ -637,6 +643,8 @@ onMounted(() => {
             <label>角色<input v-model="agentForm.role" placeholder="这个 Agent 负责什么" /></label>
             <label>欢迎语<input v-model="agentForm.welcome_message" placeholder="用户打开对话时看到的内容" /></label>
             <label>语气<input v-model="agentForm.tone" placeholder="例如：友好、简洁" /></label>
+            <label>知识库服务<select v-model="agentForm.knowledge_provider"><option value="weknora">WeKnora</option><option value="local">本地 RAG（备用）</option></select></label>
+            <label>WeKnora 知识库 ID<input v-model="agentForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
             <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
             <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
             <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>

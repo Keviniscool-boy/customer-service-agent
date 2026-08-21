@@ -1,6 +1,7 @@
 import logging
 import shutil
 from pathlib import Path
+from typing import Literal
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.encoders import jsonable_encoder
@@ -45,6 +46,7 @@ from config.agent_config import (
     PROJECT_ROOT,
     AGENT_CONFIG_DIR,
     delete_agent_config,
+    get_default_ecom_agent_config,
     load_agent_config_by_id,
     load_agent_configs,
     save_agent_config,
@@ -166,6 +168,8 @@ class UserAgentConfigRequest(BaseModel):
     behavior_rules: list[str] = Field(default_factory=list, max_length=20)
     forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
     enabled_tools: list[str] = Field(default_factory=list)
+    knowledge_provider: Literal["local", "weknora"] = "weknora"
+    knowledge_base_id: str | None = Field(default=None, max_length=100)
     model_name: str | None = None
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
 
@@ -283,6 +287,8 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
 
 def get_agent_config(agent_id: str):
     try:
+        if agent_id == "ecom-default":
+            return get_default_ecom_agent_config()
         return load_agent_config_by_id(agent_id)
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Agent 不存在") from error
@@ -308,7 +314,11 @@ def get_user_agent_config(agent_id: str, user: dict):
 
 
 def build_agent_prompt_preview(agent_config: AgentConfig) -> dict:
-    registry = get_default_registry(agent_config.knowledge_base_path)
+    registry = get_default_registry(
+        agent_config.knowledge_base_path,
+        agent_config.knowledge_provider,
+        agent_config.knowledge_base_id,
+    )
     definitions = registry.get_definitions(set(agent_config.enabled_tools))
     return {
         "agent_id": agent_config.agent_id,
@@ -595,8 +605,12 @@ def update_user_agent(
             detail="用户 Agent 目前只能启用 search_knowledge 工具",
         )
 
+    request_data = request.model_dump()
+    request_data["knowledge_base_id"] = (
+        request.knowledge_base_id or config.knowledge_base_id
+    )
     updated_config = AgentConfig(
-        **request.model_dump(),
+        **request_data,
         owner_user_id=config.owner_user_id,
         is_public=config.is_public,
         knowledge_base_path=config.knowledge_base_path,

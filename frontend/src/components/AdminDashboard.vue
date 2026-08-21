@@ -108,6 +108,8 @@ async function loadKnowledgeStatus() {
       custom_prompt: agentConfig.value.custom_prompt || '',
       behavior_rules: (agentConfig.value.behavior_rules || []).join('\n'),
       forbidden_topics: (agentConfig.value.forbidden_topics || []).join('\n'),
+      knowledge_provider: agentConfig.value.knowledge_provider || 'weknora',
+      knowledge_base_id: agentConfig.value.knowledge_base_id || '',
       knowledge_base_path: agentConfig.value.knowledge_base_path,
       enabled_tools: agentConfig.value.enabled_tools.join(', '),
       model_name: agentConfig.value.model_name || '',
@@ -294,6 +296,13 @@ onMounted(refresh)
           <label>角色<input v-model="agentForm.role" /></label>
           <label>欢迎语<input v-model="agentForm.welcome_message" /></label>
           <label>语气<input v-model="agentForm.tone" /></label>
+          <label>知识库服务
+            <select v-model="agentForm.knowledge_provider">
+              <option value="weknora">WeKnora</option>
+              <option value="local">本地 RAG（备用）</option>
+            </select>
+          </label>
+          <label>WeKnora 知识库 ID<input v-model="agentForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
           <label>知识库目录<input v-model="agentForm.knowledge_base_path" /></label>
           <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
           <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>

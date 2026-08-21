@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from config.settings import settings
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_AGENT_CONFIG_PATH = PROJECT_ROOT / "configs" / "agents" / "ecommerce.json"
@@ -30,7 +32,7 @@ class AgentConfig(BaseModel):
     custom_prompt: str = Field(default="", max_length=4000)
     behavior_rules: list[str] = Field(default_factory=list, max_length=20)
     forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
-    knowledge_provider: Literal["local", "weknora"] = "local"
+    knowledge_provider: Literal["local", "weknora"] = "weknora"
     knowledge_base_id: str | None = Field(default=None, max_length=100)
     knowledge_base_path: str = Field(min_length=1)
     enabled_tools: list[str] = Field(default_factory=list)
@@ -39,9 +41,23 @@ class AgentConfig(BaseModel):
 
 
 def get_default_ecom_agent_config() -> AgentConfig:
-    """读取 1.0 电商客服配置，并返回独立的配置对象。"""
+    """读取默认电商 Agent，并应用环境中的知识库提供方配置。"""
 
-    return load_agent_config(DEFAULT_AGENT_CONFIG_PATH)
+    config = load_agent_config(DEFAULT_AGENT_CONFIG_PATH)
+    knowledge_base_id = (
+        settings.weknora_knowledge_base_id.strip()
+        or config.knowledge_base_id
+    )
+    return config.model_copy(
+        update={
+            "knowledge_provider": settings.knowledge_provider,
+            "knowledge_base_id": (
+                knowledge_base_id
+                if settings.knowledge_provider == "weknora"
+                else config.knowledge_base_id
+            ),
+        }
+    )
 
 
 def load_agent_config(path: str | Path) -> AgentConfig:
