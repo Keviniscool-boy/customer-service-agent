@@ -124,7 +124,11 @@ def save_agent_config(
 
     config_dir = Path(directory) if directory else AGENT_CONFIG_DIR
     config_dir.mkdir(parents=True, exist_ok=True)
-    path = config_dir / f"{config.agent_id}.json"
+    path = (
+        config_dir / DEFAULT_AGENT_CONFIG_PATH.name
+        if config.agent_id == "ecom-default"
+        else config_dir / f"{config.agent_id}.json"
+    )
     if path.exists() and not overwrite:
         raise FileExistsError(f"Agent 已存在：{config.agent_id}")
     path.write_text(
