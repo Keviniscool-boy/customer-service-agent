@@ -117,11 +117,65 @@ class APIErrorsTest(unittest.TestCase):
 
                 self.assertEqual(response.status_code, 503)
                 self.assertEqual(
+                    response.json()["error"]["code"],
+                    "SERVICE_UNAVAILABLE",
+                )
+                self.assertEqual(
                     response.json()["error"]["message"],
                     "Agent 暂时不可用，请检查知识库索引和配置",
                 )
             finally:
                 database.DB_PATH = original_path
+
+    def test_login_configuration_failure_returns_service_unavailable(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "login-config-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    with patch(
+                        "api.main.create_access_token",
+                        side_effect=RuntimeError("JWT_SECRET missing"),
+                    ):
+                        response = client.post(
+                            "/login",
+                            json={
+                                "username": "login-config-error-user",
+                                "password": "secret123",
+                            },
+                        )
+
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(
+                    response.json()["error"]["code"],
+                    "SERVICE_UNAVAILABLE",
+                )
+                self.assertEqual(
+                    response.json()["error"]["message"],
+                    "认证服务暂时不可用，请联系管理员",
+                )
+            finally:
+                database.DB_PATH = original_path
+
+    def test_oversized_credentials_are_rejected(self):
+        response = TestClient(app).post(
+            "/register",
+            json={
+                "username": "a" * 65,
+                "password": "secret123",
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
 
 
 if __name__ == "__main__":

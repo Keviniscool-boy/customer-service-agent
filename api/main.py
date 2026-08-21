@@ -81,6 +81,7 @@ async def http_exception_handler(
         401: "UNAUTHORIZED",
         403: "FORBIDDEN",
         404: "NOT_FOUND",
+        503: "SERVICE_UNAVAILABLE",
     }
     code = code_by_status.get(exc.status_code, "HTTP_ERROR")
     if isinstance(exc.detail, str):
@@ -129,8 +130,8 @@ async def unhandled_exception_handler(
 
 
 class Credentials(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class ChatRequest(BaseModel):
@@ -205,8 +206,16 @@ def login(credentials: Credentials):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
         )
+    try:
+        access_token = create_access_token(user)
+    except RuntimeError as error:
+        logger.exception("登录令牌生成失败")
+        raise HTTPException(
+            status_code=503,
+            detail="认证服务暂时不可用，请联系管理员",
+        ) from error
     return {
-        "access_token": create_access_token(user),
+        "access_token": access_token,
         "token_type": "bearer",
         "user": user,
     }
@@ -232,6 +241,12 @@ def get_current_user(
         if user is None:
             raise ValueError("用户不存在")
         return user
+    except RuntimeError as error:
+        logger.exception("认证服务配置错误")
+        raise HTTPException(
+            status_code=503,
+            detail="认证服务暂时不可用，请联系管理员",
+        ) from error
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
