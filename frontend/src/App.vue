@@ -31,6 +31,7 @@ const agentManagerLoading = ref(false)
 const agentManagerError = ref('')
 const agentFile = ref(null)
 const agentKnowledge = ref(null)
+const agentPromptPreview = ref('')
 const agentForm = ref(createEmptyAgentForm())
 
 const isLogin = computed(() => mode.value === 'login')
@@ -38,12 +39,18 @@ const isLoggedIn = computed(() => authenticated.value && Boolean(user.value))
 const isAdmin = computed(() => isLoggedIn.value && user.value.role === 'admin')
 const activeSession = computed(() => sessions.value.find((session) => session.id === activeSessionId.value))
 const activeAgent = computed(() => agents.value.find((agent) => agent.agent_id === activeAgentId.value) || {
-  agent_id: 'ecom-default',
-  name: '小极',
-  role: '极客商城智能客服',
-  welcome_message: '您好，我是极客商城智能客服小极，很高兴为您服务！',
+  agent_id: 'default-agent',
+  name: '智能助手',
+  role: '通用智能助手',
+  welcome_message: '你好，我可以帮助你。',
+  service_scope: [],
   is_public: true,
 })
+const suggestedQuestions = computed(() =>
+  (activeAgent.value.service_scope || [])
+    .slice(0, 3)
+    .map((scope) => `我想咨询${scope}`),
+)
 
 const ownedAgents = computed(() => agents.value.filter((agent) => !agent.is_public))
 
@@ -188,6 +195,7 @@ function openAgentManager() {
   agentManagerError.value = ''
   agentForm.value = createEmptyAgentForm()
   agentKnowledge.value = null
+  agentPromptPreview.value = ''
   agentFile.value = null
 }
 
@@ -195,6 +203,7 @@ function closeAgentManager() {
   showAgentManager.value = false
   agentManagerError.value = ''
   agentFile.value = null
+  agentPromptPreview.value = ''
 }
 
 async function editOwnedAgent(agentId) {
@@ -233,6 +242,22 @@ async function loadAgentKnowledge() {
     )
   } catch (error) {
     agentManagerError.value = error.message
+  }
+}
+
+async function previewAgentPrompt() {
+  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    const data = await apiRequest(
+      `/agents/${agentForm.value.agent_id}/prompt-preview`,
+    )
+    agentPromptPreview.value = data.prompt || ''
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
   }
 }
 
@@ -478,7 +503,7 @@ onMounted(() => {
       <div class="sidebar-brand">
         <div class="small-mark">极</div>
         <div>
-          <strong>小极客服</strong>
+          <strong>Agent 工作台</strong>
           <span>服务工作台</span>
         </div>
       </div>
@@ -532,7 +557,7 @@ onMounted(() => {
     <section class="chat-panel">
       <header class="chat-header">
         <div>
-          <p class="eyebrow">CUSTOMER SERVICE AGENT</p>
+          <p class="eyebrow">AGENT WORKSPACE</p>
           <h1>{{ activeSession?.title || activeAgent.name }}</h1>
         </div>
         <span class="online-status"><i></i> 在线</span>
@@ -545,10 +570,8 @@ onMounted(() => {
             <div class="welcome-mark">{{ activeAgent.name.slice(0, 1) }}</div>
             <h2>你好，{{ user.username }}</h2>
             <p>{{ activeAgent.welcome_message }}</p>
-            <div class="suggestion-list">
-              <button type="button" @click="draft = '查询我的订单'">查询我的订单</button>
-              <button type="button" @click="draft = '我的订单到哪里了？'">查询物流</button>
-              <button type="button" @click="draft = '7天无理由退货怎么计算？'">退货政策</button>
+            <div v-if="suggestedQuestions.length" class="suggestion-list">
+              <button v-for="question in suggestedQuestions" :key="question" type="button" @click="draft = question">{{ question }}</button>
             </div>
           </div>
 
@@ -624,8 +647,10 @@ onMounted(() => {
             <p v-if="agentManagerError" class="manager-error">{{ agentManagerError }}</p>
             <div class="agent-form-actions">
               <button class="primary-button" type="submit" :disabled="agentManagerLoading">{{ agentManagerLoading ? '处理中...' : '保存 Agent' }}</button>
+              <button v-if="agentManagerMode === 'edit'" class="refresh-button" type="button" :disabled="agentManagerLoading" @click="previewAgentPrompt">预览 Prompt</button>
               <button v-if="agentManagerMode === 'edit'" class="danger-button" type="button" :disabled="agentManagerLoading" @click="deleteUserAgent">删除 Agent</button>
             </div>
+            <pre v-if="agentPromptPreview" class="prompt-preview">{{ agentPromptPreview }}</pre>
 
             <template v-if="agentManagerMode === 'edit'">
               <div class="knowledge-manager">
@@ -658,23 +683,23 @@ onMounted(() => {
 
   <main v-else class="auth-shell">
     <section class="brand-panel">
-      <div class="brand-mark" aria-hidden="true">极</div>
-      <p class="eyebrow">E-COMMERCE SERVICE AGENT</p>
-      <h1>小极客服</h1>
-      <p class="brand-copy">订单、物流、商品和售后问题，交给一个懂业务的客服 Agent。</p>
+      <div class="brand-mark" aria-hidden="true">AI</div>
+      <p class="eyebrow">AGENT WORKSPACE</p>
+      <h1>智能 Agent 工作台</h1>
+      <p class="brand-copy">配置角色、接入知识库，让每个 Agent 专注自己的任务。</p>
       <div class="feature-list">
-        <span>01</span><p>对话记忆，接着聊</p>
-        <span>02</span><p>订单信息，快速查</p>
-        <span>03</span><p>复杂问题，转人工</p>
+        <span>01</span><p>保存多轮对话</p>
+        <span>02</span><p>连接个人知识库</p>
+        <span>03</span><p>按需配置工具</p>
       </div>
     </section>
 
     <section class="auth-panel">
       <form class="auth-form" @submit.prevent="submitForm">
         <div class="form-heading">
-          <p class="eyebrow">CUSTOMER SERVICE CONSOLE</p>
+          <p class="eyebrow">AGENT CONSOLE</p>
           <h2>{{ isLogin ? '欢迎回来' : '创建账号' }}</h2>
-          <p class="muted">{{ isLogin ? '登录后开始使用小极客服。' : '注册一个账号，保存你的会话记录。' }}</p>
+          <p class="muted">{{ isLogin ? '登录后开始使用 Agent 工作台。' : '注册一个账号，保存你的会话记录。' }}</p>
         </div>
 
         <div class="mode-tabs" role="tablist" aria-label="登录或注册">
@@ -689,7 +714,7 @@ onMounted(() => {
         </label>
         <label class="password-toggle"><input v-model="showPassword" type="checkbox" /> 显示密码</label>
         <p v-if="message" :class="['form-message', messageType]" role="status">{{ message }}</p>
-        <button class="primary-button" type="submit" :disabled="loading">{{ loading ? '处理中...' : isLogin ? '登录小极客服' : '创建账号' }}</button>
+        <button class="primary-button" type="submit" :disabled="loading">{{ loading ? '处理中...' : isLogin ? '登录工作台' : '创建账号' }}</button>
       </form>
     </section>
   </main>

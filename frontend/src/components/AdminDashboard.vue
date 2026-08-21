@@ -228,7 +228,7 @@ onMounted(refresh)
       <div class="sidebar-brand">
         <div class="small-mark">极</div>
         <div>
-          <strong>小极后台</strong>
+          <strong>Agent 管理后台</strong>
           <span>运营管理中心</span>
         </div>
       </div>

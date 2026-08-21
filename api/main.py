@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from agent.chat import EcomAgent
 from agent.presentation import visible_reply
+from agent.tools.registry import get_default_registry
 from agent.rag.knowledge_base import (
     DEFAULT_MAX_FILE_BYTES,
     build_knowledge_index,
@@ -47,6 +48,7 @@ from config.agent_config import (
     load_agent_configs,
     save_agent_config,
 )
+from prompts.builder import build_system_prompt
 
 
 app = FastAPI(title="Ecom Service Agent")
@@ -304,6 +306,20 @@ def get_user_agent_config(agent_id: str, user: dict):
     return config
 
 
+def build_agent_prompt_preview(agent_config: AgentConfig) -> dict:
+    registry = get_default_registry(agent_config.knowledge_base_path)
+    definitions = registry.get_definitions(set(agent_config.enabled_tools))
+    return {
+        "agent_id": agent_config.agent_id,
+        "prompt": build_system_prompt(agent_config, definitions),
+        "tool_names": [
+            tool.get("function", {}).get("name")
+            for tool in definitions
+            if tool.get("function", {}).get("name")
+        ],
+    }
+
+
 def get_owned_agent_config(agent_id: str, user: dict):
     """只返回当前用户拥有的 Agent，公开 Agent 也不能被用户修改。"""
 
@@ -433,6 +449,14 @@ def user_agent_detail(
     return {"agent": config.model_dump()}
 
 
+@app.get("/agents/{agent_id}/prompt-preview")
+def user_agent_prompt_preview(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    return build_agent_prompt_preview(get_user_agent_config(agent_id, user))
+
+
 @app.put("/agents/{agent_id}")
 def update_user_agent(
     agent_id: str,
@@ -496,6 +520,14 @@ def admin_agent_detail(
     user: dict = Depends(require_admin),
 ):
     return {"agent": get_agent_config(agent_id).model_dump()}
+
+
+@app.get("/admin/agents/{agent_id}/prompt-preview")
+def admin_agent_prompt_preview(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    return build_agent_prompt_preview(get_agent_config(agent_id))
 
 
 @app.post("/admin/agents")

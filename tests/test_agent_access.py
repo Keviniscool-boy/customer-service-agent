@@ -116,6 +116,31 @@ class AgentAccessTest(unittest.TestCase):
         self.assertEqual(denied.json()["error"]["message"], "Agent 不存在")
         self.assertEqual(allowed.status_code, 200)
 
+    def test_owner_can_preview_custom_prompt(self):
+        private_config = self._config(
+            "private-a",
+            owner_user_id=self.user_a_id,
+            is_public=False,
+        ).model_copy(
+            update={
+                "custom_prompt": "先给结论，再给步骤。",
+                "behavior_rules": ["不确定时说明"],
+            }
+        )
+        with patch(
+            "api.main.load_agent_config_by_id",
+            return_value=private_config,
+        ), patch("api.main.get_default_registry") as registry_mock:
+            registry_mock.return_value.get_definitions.return_value = []
+            response = self.client.get(
+                "/agents/private-a/prompt-preview",
+                headers=self.headers_a,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("先给结论，再给步骤。", response.json()["prompt"])
+        self.assertIn("不确定时说明", response.json()["prompt"])
+
     def test_user_can_create_a_private_agent_with_server_owned_storage_path(self):
         payload = {
             "agent_id": "my-agent",
