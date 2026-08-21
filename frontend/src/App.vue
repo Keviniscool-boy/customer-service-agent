@@ -55,6 +55,9 @@ function createEmptyAgentForm() {
     welcome_message: '',
     tone: '友好、清晰、简洁',
     service_scope: '',
+    custom_prompt: '',
+    behavior_rules: '',
+    forbidden_topics: '',
     model_name: '',
     temperature: '',
   }
@@ -208,6 +211,9 @@ async function editOwnedAgent(agentId) {
       welcome_message: config.welcome_message,
       tone: config.tone,
       service_scope: (config.service_scope || []).join('\n'),
+      custom_prompt: config.custom_prompt || '',
+      behavior_rules: (config.behavior_rules || []).join('\n'),
+      forbidden_topics: (config.forbidden_topics || []).join('\n'),
       model_name: config.model_name || '',
       temperature: config.temperature ?? '',
     }
@@ -247,6 +253,9 @@ async function saveUserAgent() {
       welcome_message: form.welcome_message.trim(),
       tone: form.tone.trim(),
       service_scope: form.service_scope.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+      custom_prompt: form.custom_prompt.trim(),
+      behavior_rules: form.behavior_rules.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+      forbidden_topics: form.forbidden_topics.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
       enabled_tools: ['search_knowledge'],
       model_name: form.model_name.trim() || null,
       temperature: form.temperature === '' ? null : Number(form.temperature),
@@ -608,6 +617,9 @@ onMounted(() => {
             <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
             <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
             <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+            <label class="wide-field">自定义 Prompt<textarea v-model="agentForm.custom_prompt" rows="5" placeholder="告诉 Agent 应该如何工作，例如：你是一个学习助手，回答时先给结论，再给步骤。"></textarea></label>
+            <label class="wide-field">行为规则<textarea v-model="agentForm.behavior_rules" rows="3" placeholder="每行一条规则"></textarea></label>
+            <label class="wide-field">禁止主题<textarea v-model="agentForm.forbidden_topics" rows="3" placeholder="每行一个不处理的主题"></textarea></label>
             <p class="agent-tool-note">当前个人 Agent 自动启用知识库搜索，不开放订单和退款工具。</p>
             <p v-if="agentManagerError" class="manager-error">{{ agentManagerError }}</p>
             <div class="agent-form-actions">

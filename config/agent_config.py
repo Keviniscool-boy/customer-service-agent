@@ -27,6 +27,9 @@ class AgentConfig(BaseModel):
     welcome_message: str = Field(min_length=1, max_length=1000)
     tone: str = Field(min_length=1, max_length=500)
     service_scope: list[str] = Field(min_length=1)
+    custom_prompt: str = Field(default="", max_length=4000)
+    behavior_rules: list[str] = Field(default_factory=list, max_length=20)
+    forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
     knowledge_base_path: str = Field(min_length=1)
     enabled_tools: list[str] = Field(default_factory=list)
     model_name: str | None = None

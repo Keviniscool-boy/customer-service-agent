@@ -126,6 +126,9 @@ class AgentConfigTest(unittest.TestCase):
             welcome_message="你好",
             tone="简洁",
             service_scope=["咨询"],
+            custom_prompt="先给结论，再给步骤。",
+            behavior_rules=["不确定时说明原因"],
+            forbidden_topics=["医疗诊断"],
             knowledge_base_path="knowledge/saved-agent",
         )
         with tempfile.TemporaryDirectory() as temp_dir:

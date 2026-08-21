@@ -15,6 +15,9 @@
     "优惠活动",
     "账户问题"
   ],
+  "custom_prompt": "",
+  "behavior_rules": [],
+  "forbidden_topics": [],
   "knowledge_base_path": "knowledge",
   "enabled_tools": [
     "query_order",

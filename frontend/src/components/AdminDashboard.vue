@@ -105,6 +105,9 @@ async function loadKnowledgeStatus() {
       welcome_message: agentConfig.value.welcome_message,
       tone: agentConfig.value.tone,
       service_scope: agentConfig.value.service_scope.join('\n'),
+      custom_prompt: agentConfig.value.custom_prompt || '',
+      behavior_rules: (agentConfig.value.behavior_rules || []).join('\n'),
+      forbidden_topics: (agentConfig.value.forbidden_topics || []).join('\n'),
       knowledge_base_path: agentConfig.value.knowledge_base_path,
       enabled_tools: agentConfig.value.enabled_tools.join(', '),
       model_name: agentConfig.value.model_name || '',
@@ -127,6 +130,9 @@ async function saveAgentConfig() {
         ...agentConfig.value,
         ...agentForm.value,
         service_scope: agentForm.value.service_scope.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
+        custom_prompt: agentForm.value.custom_prompt.trim(),
+        behavior_rules: agentForm.value.behavior_rules.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
+        forbidden_topics: agentForm.value.forbidden_topics.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
         enabled_tools: agentForm.value.enabled_tools.split(',').map((item) => item.trim()).filter(Boolean),
         model_name: agentForm.value.model_name.trim() || null,
         temperature: agentForm.value.temperature === '' ? null : Number(agentForm.value.temperature),
@@ -292,6 +298,9 @@ onMounted(refresh)
           <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
           <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
           <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+          <label class="wide-field">自定义 Prompt<textarea v-model="agentForm.custom_prompt" rows="5" placeholder="定义这个 Agent 的工作方式"></textarea></label>
+          <label class="wide-field">行为规则<textarea v-model="agentForm.behavior_rules" rows="3" placeholder="每行一条规则"></textarea></label>
+          <label class="wide-field">禁止主题<textarea v-model="agentForm.forbidden_topics" rows="3" placeholder="每行一个不处理的主题"></textarea></label>
           <label class="wide-field">启用工具<textarea v-model="agentForm.enabled_tools" rows="2" placeholder="多个工具用英文逗号分隔"></textarea></label>
           <div class="wide-field form-actions"><button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="saveAgentConfig">保存 Agent 配置</button></div>
         </div>
