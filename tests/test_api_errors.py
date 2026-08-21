@@ -177,6 +177,47 @@ class APIErrorsTest(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
 
+    def test_repeated_login_failures_are_rate_limited(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "rate-limit-user",
+                            "password": "secret123",
+                        },
+                    )
+                    for _ in range(5):
+                        response = client.post(
+                            "/login",
+                            json={
+                                "username": "rate-limit-user",
+                                "password": "wrong-password",
+                            },
+                        )
+                        self.assertEqual(response.status_code, 401)
+
+                    response = client.post(
+                        "/login",
+                        json={
+                            "username": "rate-limit-user",
+                            "password": "wrong-password",
+                        },
+                    )
+
+                self.assertEqual(response.status_code, 429)
+                self.assertEqual(
+                    response.json()["error"]["code"],
+                    "TOO_MANY_REQUESTS",
+                )
+                self.assertIn("Retry-After", response.headers)
+            finally:
+                database.DB_PATH = original_path
+
 
 if __name__ == "__main__":
     unittest.main()

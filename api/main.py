@@ -36,6 +36,7 @@ from api.auth import (
     decode_access_token,
     register_user,
 )
+from api.rate_limit import LoginRateLimiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
@@ -50,6 +51,7 @@ from config.agent_config import (
 
 app = FastAPI(title="Ecom Service Agent")
 logger = logging.getLogger(__name__)
+login_rate_limiter = LoginRateLimiter()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -81,6 +83,7 @@ async def http_exception_handler(
         401: "UNAUTHORIZED",
         403: "FORBIDDEN",
         404: "NOT_FOUND",
+        429: "TOO_MANY_REQUESTS",
         503: "SERVICE_UNAVAILABLE",
     }
     code = code_by_status.get(exc.status_code, "HTTP_ERROR")
@@ -199,13 +202,25 @@ def register(credentials: Credentials):
 
 
 @app.post("/login")
-def login(credentials: Credentials):
+def login(credentials: Credentials, request: Request):
+    client_host = request.client.host if request.client else "unknown"
+    attempt_key = f"{client_host}:{credentials.username.strip().lower()}"
+    if login_rate_limiter.is_blocked(attempt_key):
+        retry_after = login_rate_limiter.retry_after(attempt_key)
+        raise HTTPException(
+            status_code=429,
+            detail="登录失败次数过多，请稍后重试",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     user = authenticate_user(credentials.username, credentials.password)
     if not user:
+        login_rate_limiter.record_failure(attempt_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
         )
+    login_rate_limiter.record_success(attempt_key)
     try:
         access_token = create_access_token(user)
     except RuntimeError as error:
