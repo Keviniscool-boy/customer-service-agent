@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -76,6 +77,49 @@ class APIErrorsTest(unittest.TestCase):
                             },
                         },
                     )
+            finally:
+                database.DB_PATH = original_path
+
+    def test_chat_agent_initialization_failure_returns_service_unavailable(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "agent-init-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    login = client.post(
+                        "/login",
+                        json={
+                            "username": "agent-init-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    headers = {
+                        "Authorization": f"Bearer {login.json()['access_token']}"
+                    }
+
+                    with patch(
+                        "api.main.EcomAgent",
+                        side_effect=FileNotFoundError("index missing"),
+                    ):
+                        response = client.post(
+                            "/chat",
+                            json={"message": "你好"},
+                            headers=headers,
+                        )
+
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(
+                    response.json()["error"]["message"],
+                    "Agent 暂时不可用，请检查知识库索引和配置",
+                )
             finally:
                 database.DB_PATH = original_path
 

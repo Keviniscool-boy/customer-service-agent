@@ -75,6 +75,44 @@ class KnowledgeAPITest(unittest.TestCase):
             finally:
                 database.DB_PATH = original_path
 
+    def test_embedding_failure_returns_service_unavailable(self):
+        original_path = database.DB_PATH
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            source_dir = Path(temp_dir) / "knowledge"
+            chunks_path = Path(temp_dir) / "chunks.json"
+            index_path = Path(temp_dir) / "index.json"
+            try:
+                with TestClient(app) as client:
+                    headers = self.login_as_admin(client)
+                    with patch(
+                        "api.main.get_agent_knowledge_paths",
+                        return_value=(source_dir, chunks_path, index_path),
+                    ), patch(
+                        "api.main.build_knowledge_index",
+                        side_effect=RuntimeError("embedding service unavailable"),
+                    ):
+                        response = client.post(
+                            "/admin/agents/ecom-default/knowledge",
+                            headers=headers,
+                            files={
+                                "file": (
+                                    "faq.md",
+                                    b"# FAQ\n\n## Test\nAnswer",
+                                    "text/markdown",
+                                )
+                            },
+                        )
+
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(
+                    response.json()["error"]["message"],
+                    "知识库索引服务暂时不可用，请稍后重试",
+                )
+                self.assertFalse((source_dir / "faq.md").exists())
+            finally:
+                database.DB_PATH = original_path
+
     def test_normal_user_cannot_upload_knowledge(self):
         original_path = database.DB_PATH
         with tempfile.TemporaryDirectory() as temp_dir:

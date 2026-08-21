@@ -250,6 +250,12 @@ def get_agent_config(agent_id: str):
         return load_agent_config_by_id(agent_id)
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Agent 不存在") from error
+    except (FileNotFoundError, ValueError) as error:
+        logger.exception("Agent 配置加载失败：%s", agent_id)
+        raise HTTPException(
+            status_code=503,
+            detail="Agent 配置暂时不可用，请联系管理员",
+        ) from error
 
 
 def get_user_agent_config(agent_id: str, user: dict):
@@ -291,6 +297,21 @@ def validate_agent_owner(config: AgentConfig) -> None:
             status_code=400,
             detail="私有 Agent 必须指定归属用户",
         )
+
+
+def knowledge_build_http_exception(error: Exception) -> HTTPException:
+    """把索引错误转换成用户能理解的 HTTP 错误，并保留服务端日志。"""
+
+    logger.exception("知识库索引失败", exc_info=error)
+    if isinstance(error, (FileNotFoundError, ValueError, UnicodeDecodeError)):
+        return HTTPException(
+            status_code=400,
+            detail="知识库内容无效，请检查 Markdown 文件",
+        )
+    return HTTPException(
+        status_code=503,
+        detail="知识库索引服务暂时不可用，请稍后重试",
+    )
 
 
 def get_agent_knowledge_paths(agent_config):
@@ -545,10 +566,7 @@ async def upload_knowledge(
         result = build_knowledge_index(source_dir, chunks_path, index_path)
     except Exception as error:
         target_path.unlink(missing_ok=True)
-        raise HTTPException(
-            status_code=400,
-            detail="知识库索引生成失败，请检查文件内容或模型配置",
-        ) from error
+        raise knowledge_build_http_exception(error) from error
 
     return {
         "success": True,
@@ -573,10 +591,7 @@ def rebuild_knowledge(
     try:
         result = build_knowledge_index(source_dir, chunks_path, index_path)
     except Exception as error:
-        raise HTTPException(
-            status_code=400,
-            detail="知识库重建失败，请检查文件内容或模型配置",
-        ) from error
+        raise knowledge_build_http_exception(error) from error
     return {
         "success": True,
         "agent_id": agent_id,
@@ -617,10 +632,9 @@ def delete_knowledge_file(
             result = {"file_count": 0, "chunk_count": 0}
     except Exception as error:
         target_path.write_bytes(original_content)
-        raise HTTPException(
-            status_code=400,
-            detail="删除后重建索引失败，已恢复原文件",
-        ) from error
+        mapped_error = knowledge_build_http_exception(error)
+        mapped_error.detail = f"{mapped_error.detail}，已恢复原文件"
+        raise mapped_error from error
 
     return {
         "success": True,
@@ -924,10 +938,17 @@ def remove_session(session_id: str, user: dict = Depends(get_current_user)):
 @app.post("/chat")
 def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
     agent_config = get_user_agent_config(request.agent_id, user)
-    agent = EcomAgent(
-        user_id=user["id"],
-        session_id=request.session_id,
-        agent_config=agent_config,
-    )
+    try:
+        agent = EcomAgent(
+            user_id=user["id"],
+            session_id=request.session_id,
+            agent_config=agent_config,
+        )
+    except (FileNotFoundError, OSError, ValueError) as error:
+        logger.exception("Agent 初始化失败：%s", request.agent_id)
+        raise HTTPException(
+            status_code=503,
+            detail="Agent 暂时不可用，请检查知识库索引和配置",
+        ) from error
     response = agent.chat(request.message)
     return PlainTextResponse(content=visible_reply(response.reply))
