@@ -58,6 +58,47 @@ class WeKnoraClientTest(unittest.TestCase):
         self.assertEqual(payload["embedding_model_id"], "embedding-1")
         self.assertEqual(result["id"], "kb-1")
 
+    def test_resolve_embedding_model_accepts_model_name_or_id(self):
+        response = self.response(
+            {
+                "success": True,
+                "data": [
+                    {
+                        "id": "embedding-uuid",
+                        "name": "text-embedding-v1",
+                        "type": "Embedding",
+                    }
+                ],
+            }
+        )
+        with patch(
+            "agent.integrations.weknora.urlopen",
+            return_value=response,
+        ) as open_mock:
+            client = WeKnoraClient("http://weknora.local", "secret-key")
+            self.assertEqual(
+                client.resolve_embedding_model_id("text-embedding-v1"),
+                "embedding-uuid",
+            )
+            self.assertEqual(
+                client.resolve_embedding_model_id("embedding-uuid"),
+                "embedding-uuid",
+            )
+
+        request = open_mock.call_args_list[0].args[0]
+        self.assertEqual(request.method, "GET")
+        self.assertEqual(request.full_url, "http://weknora.local/api/v1/models")
+
+    def test_resolve_embedding_model_rejects_unknown_model(self):
+        response = self.response(
+            {"success": True, "data": [{"id": "embedding-uuid", "type": "Embedding"}]}
+        )
+        with patch("agent.integrations.weknora.urlopen", return_value=response):
+            with self.assertRaisesRegex(WeKnoraError, "找不到 Embedding 模型"):
+                WeKnoraClient("http://weknora.local", "secret-key").resolve_embedding_model_id(
+                    "missing-model"
+                )
+
     def test_upload_markdown_uses_multipart_form(self):
         response = self.response(
             {

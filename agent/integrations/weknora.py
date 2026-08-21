@@ -61,6 +61,42 @@ class WeKnoraClient:
             raise WeKnoraError("WeKnora 返回的知识库信息不完整")
         return data
 
+    def list_models(self) -> list[dict]:
+        """读取 WeKnora 模型目录，供配置校验和名称解析使用。"""
+
+        result = self._request("/api/v1/models", method="GET")
+        models = result.get("data", result) if isinstance(result, dict) else result
+        if not isinstance(models, list):
+            raise WeKnoraError("WeKnora 返回的模型列表格式不正确")
+        return [model for model in models if isinstance(model, dict)]
+
+    def resolve_embedding_model_id(self, model_reference: str) -> str:
+        """把模型 ID 或模型名称解析成 WeKnora 真正使用的模型 ID。"""
+
+        reference = model_reference.strip()
+        if not reference:
+            raise WeKnoraError("没有配置 WeKnora Embedding 模型")
+
+        for model in self.list_models():
+            model_type = str(
+                model.get("type") or model.get("model_type") or ""
+            ).lower()
+            if model_type and "embedding" not in model_type:
+                continue
+            if reference in {
+                str(model.get("id") or ""),
+                str(model.get("name") or ""),
+                str(model.get("display_name") or ""),
+            }:
+                model_id = model.get("id")
+                if model_id:
+                    return str(model_id)
+
+        raise WeKnoraError(
+            f"WeKnora 中找不到 Embedding 模型：{reference}，"
+            "请检查模型名称或模型 ID"
+        )
+
     def upload_markdown(
         self,
         knowledge_base_id: str,

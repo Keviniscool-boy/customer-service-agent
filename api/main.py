@@ -510,10 +510,13 @@ async def upload_weknora_knowledge(
                 ),
             )
         try:
+            embedding_model_id = client.resolve_embedding_model_id(
+                settings.weknora_embedding_model_id
+            )
             knowledge_base = client.create_knowledge_base(
                 f"{agent_config.name}知识库",
                 description=f"{agent_config.name}的 WeKnora 知识库",
-                embedding_model_id=settings.weknora_embedding_model_id,
+                embedding_model_id=embedding_model_id,
             )
         except WeKnoraError as error:
             raise weknora_http_exception(error) from error
