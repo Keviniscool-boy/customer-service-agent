@@ -396,7 +396,12 @@ def get_weknora_client() -> WeKnoraClient:
 
 def weknora_http_exception(error: WeKnoraError) -> HTTPException:
     logger.exception("WeKnora 知识库请求失败")
-    status_code = 409 if "HTTP 409" in str(error) else 502
+    if "HTTP 404" in str(error):
+        status_code = 404
+    elif "HTTP 409" in str(error):
+        status_code = 409
+    else:
+        status_code = 502
     return HTTPException(
         status_code=status_code,
         detail=f"WeKnora 知识库服务调用失败：{error}",
@@ -776,14 +781,33 @@ def rebuild_knowledge(
         else get_manageable_agent_config(agent_id, user)
     )
     if agent_config.knowledge_provider == "weknora":
-        result = weknora_knowledge_status(agent_id, agent_config)
-        result.update(
-            {
+        if not agent_config.knowledge_base_id:
+            return {
                 "success": True,
-                "message": "WeKnora 会在上传文档后自动解析，不需要本地重建索引",
+                "agent_id": agent_id,
+                "provider": "weknora",
+                "knowledge_base_id": None,
+                "reparsed_count": 0,
+                "message": "当前 Agent 还没有 WeKnora 知识库",
             }
-        )
-        return result
+        client = get_weknora_client()
+        try:
+            documents = client.list_knowledge(agent_config.knowledge_base_id)
+            reparsed = [
+                client.reparse_knowledge(document["id"])
+                for document in documents
+                if isinstance(document, dict) and document.get("id")
+            ]
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": agent_config.knowledge_base_id,
+            "reparsed_count": len(reparsed),
+            "message": "WeKnora 已提交重新解析任务",
+        }
 
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     try:
@@ -809,10 +833,40 @@ def delete_knowledge_file(
         if user.get("role") == "admin"
         else get_manageable_agent_config(agent_id, user)
     )
-    source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     safe_filename = Path(filename).name
     if safe_filename != filename or Path(filename).suffix.lower() != ".md":
         raise HTTPException(status_code=400, detail="文件名无效")
+    if agent_config.knowledge_provider == "weknora":
+        if not agent_config.knowledge_base_id:
+            raise HTTPException(status_code=404, detail="WeKnora 知识库不存在")
+        client = get_weknora_client()
+        try:
+            documents = client.list_knowledge(agent_config.knowledge_base_id)
+            matched = next(
+                (
+                    document
+                    for document in documents
+                    if isinstance(document, dict)
+                    and (document.get("file_name") or document.get("title"))
+                    == safe_filename
+                ),
+                None,
+            )
+            if not matched or not matched.get("id"):
+                raise HTTPException(status_code=404, detail="知识库文件不存在")
+            client.delete_knowledge(matched["id"])
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": agent_config.knowledge_base_id,
+            "knowledge_id": matched["id"],
+            "filename": safe_filename,
+        }
+
+    source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
 
     target_path = source_dir / safe_filename
     if not target_path.is_file():

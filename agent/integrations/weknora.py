@@ -136,6 +136,26 @@ class WeKnoraClient:
             raise WeKnoraError("WeKnora 返回的文档信息不完整")
         return data
 
+    def reparse_knowledge(self, knowledge_id: str) -> dict:
+        if not knowledge_id:
+            raise WeKnoraError("没有配置 WeKnora knowledge_id")
+        result = self._request(
+            f"/api/v1/knowledge/{knowledge_id}/reparse",
+            method="POST",
+        )
+        data = result.get("data", result) if isinstance(result, dict) else None
+        if not isinstance(data, dict):
+            raise WeKnoraError("WeKnora 返回的重新解析结果格式不正确")
+        return data
+
+    def delete_knowledge(self, knowledge_id: str) -> dict | list:
+        if not knowledge_id:
+            raise WeKnoraError("没有配置 WeKnora knowledge_id")
+        return self._request(
+            f"/api/v1/knowledge/{knowledge_id}",
+            method="DELETE",
+        )
+
     def _request(
         self,
         path: str,

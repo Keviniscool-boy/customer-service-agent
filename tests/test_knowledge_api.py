@@ -224,6 +224,66 @@ class KnowledgeAPITest(unittest.TestCase):
             finally:
                 database.DB_PATH = original_path
 
+    def test_weknora_rebuild_submits_reparse_tasks(self):
+        original_path = database.DB_PATH
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    headers = self.login_as_admin(client)
+                    weknora_client = MagicMock()
+                    weknora_client.list_knowledge.return_value = [
+                        {"id": "doc-1", "file_name": "faq.md", "parse_status": "failed"}
+                    ]
+                    weknora_client.reparse_knowledge.return_value = {
+                        "id": "doc-1",
+                        "parse_status": "pending",
+                    }
+                    with patch(
+                        "api.main.get_agent_config",
+                        return_value=self.weknora_config("kb-1"),
+                    ), patch(
+                        "api.main.get_weknora_client", return_value=weknora_client
+                    ):
+                        response = client.post(
+                            "/admin/agents/ecom-default/knowledge/rebuild",
+                            headers=headers,
+                        )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["reparsed_count"], 1)
+                weknora_client.reparse_knowledge.assert_called_once_with("doc-1")
+            finally:
+                database.DB_PATH = original_path
+
+    def test_weknora_delete_finds_document_by_filename(self):
+        original_path = database.DB_PATH
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    headers = self.login_as_admin(client)
+                    weknora_client = MagicMock()
+                    weknora_client.list_knowledge.return_value = [
+                        {"id": "doc-1", "file_name": "faq.md", "parse_status": "completed"}
+                    ]
+                    with patch(
+                        "api.main.get_agent_config",
+                        return_value=self.weknora_config("kb-1"),
+                    ), patch(
+                        "api.main.get_weknora_client", return_value=weknora_client
+                    ):
+                        response = client.delete(
+                            "/admin/agents/ecom-default/knowledge/faq.md",
+                            headers=headers,
+                        )
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["knowledge_id"], "doc-1")
+                weknora_client.delete_knowledge.assert_called_once_with("doc-1")
+            finally:
+                database.DB_PATH = original_path
+
     def test_admin_can_rebuild_and_delete_knowledge(self):
         original_path = database.DB_PATH
         with tempfile.TemporaryDirectory() as temp_dir:
