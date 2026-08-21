@@ -193,6 +193,8 @@ Copy-Item .env.example .env
 
 当前项目自己的业务数据库仍默认使用 SQLite；Redis 只负责可选的共享限流，WeKnora 使用它自己的 PostgreSQL 和 Redis，不与当前项目直接共用内部表。
 
+当前项目也支持通过 `DATABASE_BACKEND=postgres` 和 `POSTGRES_DSN` 切换自己的业务数据库。默认仍建议使用 SQLite 学习模式，WeKnora 的数据库配置不要填到这里。
+
 ## 8. 本地启动
 
 ### 后端

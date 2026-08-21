@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     weknora_knowledge_base_id: str = ""
     redis_url: str = ""
     redis_timeout_seconds: float = 1.0
+    database_backend: Literal["sqlite", "postgres"] = "sqlite"
+    postgres_dsn: str = ""
     database_path: str = "data/app.db"
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"
