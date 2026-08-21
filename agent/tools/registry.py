@@ -1,6 +1,7 @@
 """工具定义、注册和执行。"""
 
 from collections.abc import Callable, Mapping
+from pathlib import Path
 
 from agent.tools.knowledge import make_search_knowledge, search_knowledge
 from agent.tools.logistics import query_logistics

@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from agent.tools.knowledge import make_search_knowledge
@@ -24,6 +25,12 @@ class KnowledgeToolsTest(unittest.TestCase):
             registry._functions["search_knowledge"].__name__,
             "search_knowledge",
         )
+
+    def test_custom_registry_resolves_agent_index_path(self):
+        with patch("agent.tools.registry.make_search_knowledge") as factory:
+            get_default_registry("data/custom-agent")
+
+        factory.assert_called_once_with(Path("data/custom-agent") / "index.json")
 
 
 if __name__ == "__main__":
