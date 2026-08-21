@@ -7,15 +7,19 @@ from agent.database import (
     create_session,
     get_latest_session_id,
     init_db,
+    record_tool_audit,
     load_messages,
     load_summary,
     replace_messages,
     session_belongs_to_user,
     update_summary,
 )
+from agent.business.repository import BusinessRepository
+from agent.integrations.logistics import LogisticsProvider
 from agent.summarizer import summarize
 from agent.tools.handoff import create_handoff
 from agent.tools.registry import ToolRegistry, get_default_registry
+from agent.tools.policy import has_explicit_refund_confirmation
 from config.agent_config import AgentConfig, get_default_ecom_agent_config
 from config.settings import settings
 from mcp_client.client import MCPClient
@@ -33,6 +37,8 @@ class EcomAgent:
         session_id: str | None = None,
         agent_config: AgentConfig | None = None,
         tool_registry: ToolRegistry | None = None,
+        business_repository: BusinessRepository | None = None,
+        logistics_provider: LogisticsProvider | None = None,
     ):
         init_db()
         self.user_id = user_id
@@ -41,6 +47,8 @@ class EcomAgent:
             self.agent_config.knowledge_base_path,
             self.agent_config.knowledge_provider,
             self.agent_config.knowledge_base_id,
+            business_repository,
+            logistics_provider,
         )
         if session_id and not session_belongs_to_user(
             session_id,
@@ -163,27 +171,65 @@ class EcomAgent:
 
             for tool_call in message.tool_calls:
                 tool_name = tool_call.function.name
+                tool_arguments = {}
                 try:
                     tool_arguments = json.loads(tool_call.function.arguments)
                     if not isinstance(tool_arguments, dict):
                         raise ValueError("工具参数必须是 JSON 对象")
 
-                    if tool_name in self.mcp_tool_names:
+                    if (
+                        self.tool_registry.requires_confirmation(tool_name)
+                        and not has_explicit_refund_confirmation(user_input)
+                    ):
+                        tool_result = {
+                            "success": False,
+                            "requires_confirmation": True,
+                            "message": (
+                                "退款操作尚未执行。请先向用户说明订单和退款原因，"
+                                "并等待用户明确确认退款。"
+                            ),
+                        }
+                        audit_status = "awaiting_confirmation"
+                    elif tool_name in self.mcp_tool_names:
                         tool_result = self.mcp_client.call_tool(
                             tool_name,
                             {**tool_arguments, "user_id": self.user_id},
                         )
+                        audit_status = "success"
                     else:
                         tool_result = self.tool_registry.execute(
                             tool_name,
                             tool_arguments,
                             user_id=self.user_id,
                         )
+                        audit_status = (
+                            "success"
+                            if not isinstance(tool_result, dict)
+                            or tool_result.get("success", True)
+                            else "failed"
+                        )
                 except Exception as error:
                     tool_result = {
                         "success": False,
                         "error": f"工具 {tool_name} 执行失败：{error}",
                     }
+                    audit_status = "error"
+
+                try:
+                    record_tool_audit(
+                        user_id=self.user_id,
+                        session_id=self.session_id,
+                        agent_id=self.agent_config.agent_id,
+                        tool_name=tool_name,
+                        arguments=tool_arguments,
+                        result=tool_result,
+                        status=audit_status,
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "工具审计记录失败：%s",
+                        type(error).__name__,
+                    )
 
                 self.messages.append(
                     {

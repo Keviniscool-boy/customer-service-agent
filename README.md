@@ -84,6 +84,10 @@ flowchart LR
 
 Agent 启动时会尝试连接 `MCP Server`。如果 MCP 没有启动，Agent 会自动使用本地工具继续运行。当前 MCP Server 示例只暴露了订单查询工具。
 
+业务工具的默认数据来自当前项目自己的数据库。`agent/business/repository.py` 定义订单、商品和退款的数据访问边界，默认的
+`DatabaseBusinessRepository` 会把请求转给 SQLite 或 PostgreSQL。物流工具通过 `agent/integrations/logistics.py` 的适配器查询，
+学习版默认使用演示物流数据。接真实电商系统时，只需要实现对应适配器，不需要改 Agent 的工具调用流程。
+
 ## 4. WeKnora 知识库
 
 2.0 默认使用 WeKnora。WeKnora 负责文档解析、切片、向量化、混合检索和知识库管理，当前项目只负责调用它的接口。
@@ -168,10 +172,11 @@ SQLite 数据库路径：`data/app.db`。
 | `orders` | 订单和物流信息 |
 | `refunds` | 退款申请和处理状态 |
 | `products` | 商品、价格、库存和描述 |
+| `tool_audits` | 工具调用、确认状态和结果记录 |
 
 每个用户只能读取自己的会话、订单和退款。管理员可以通过后台读取所有用户的会话和聊天记录。
 
-当前订单和商品是学习版模拟数据，启动数据库时会自动初始化。它没有连接真实电商订单系统。
+当前订单、商品和物流是学习版演示数据，启动数据库时会自动初始化。它没有连接真实电商订单系统；业务适配器只是预留了替换边界。
 
 ## 7. 环境变量
 
@@ -381,6 +386,7 @@ GET /admin/orders
 GET /admin/refunds
 GET /admin/sessions
 GET /admin/sessions/{session_id}/messages
+GET /admin/tool-audits
 GET /admin/agents/{agent_id}
 PUT /admin/agents/{agent_id}
 GET /admin/agents/{agent_id}/versions
@@ -445,6 +451,8 @@ ecom-service-agent-learning/
 │  ├─ database.py          SQLite 表结构和数据操作
 │  ├─ presentation.py      清洗对外显示的回复
 │  ├─ summarizer.py        历史消息摘要
+│  ├─ business/            订单、商品和退款的数据访问接口
+│  ├─ integrations/        WeKnora 和物流等外部服务适配器
 │  ├─ rag/                 文档切片、Embedding 和检索
 │  └─ tools/               订单、物流、商品、退款等工具
 ├─ api/
@@ -473,12 +481,14 @@ ecom-service-agent-learning/
 当前版本是电商学习版 `v2.0`：
 
 - 订单、商品和物流是模拟数据
+- 业务工具默认走演示适配器，尚未连接真实电商平台
+- 退款工具需要用户明确确认，管理员可通过工具审计接口查看调用记录
 - MCP 当前只有订单查询示例
 - RAG 使用 JSON 索引和全量余弦相似度搜索
 - 数据库使用 SQLite
 - Agent 配置目前由管理员创建和管理，私有 Agent 可以绑定一个用户
 - 没有压测真实模型聊天接口
-- 还没有密码找回、短信验证和生产级审计系统
+- 还没有密码找回、短信验证和生产级审计系统；当前只有学习版基础工具审计
 
 后续版本可以加入真实业务数据库、向量数据库、Redis、模型聊天压测、多进程部署和更完善的运营监控。
 

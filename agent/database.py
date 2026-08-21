@@ -175,6 +175,26 @@ def init_db():
         )
         """
     )
+    audit_id = (
+        "BIGSERIAL PRIMARY KEY"
+        if DATABASE_BACKEND == "postgres"
+        else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS tool_audits (
+            id {audit_id},
+            user_id TEXT,
+            session_id TEXT,
+            agent_id TEXT,
+            tool_name TEXT NOT NULL,
+            arguments_json TEXT NOT NULL,
+            result_json TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
     session_columns = _table_columns(connection, "sessions")
     if "agent_id" not in session_columns:
         connection.execute(
@@ -679,6 +699,62 @@ def update_summary(session_id: str, summary: str | None) -> None:
 
     connection.commit()
     connection.close()
+
+
+def record_tool_audit(
+    *,
+    user_id: str | None,
+    session_id: str | None,
+    agent_id: str | None,
+    tool_name: str,
+    arguments: dict,
+    result: object,
+    status: str,
+) -> None:
+    """保存一次工具调用记录，供学习版管理员查看。"""
+
+    connection = get_connection()
+    connection.execute(
+        """
+        INSERT INTO tool_audits (
+            user_id, session_id, agent_id, tool_name,
+            arguments_json, result_json, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            user_id,
+            session_id,
+            agent_id,
+            tool_name,
+            json.dumps(arguments, ensure_ascii=False),
+            result if isinstance(result, str) else json.dumps(
+                result,
+                ensure_ascii=False,
+            ),
+            status,
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+
+def list_tool_audits(limit: int = 100) -> list[dict]:
+    connection = get_connection()
+    rows = connection.execute(
+        """
+        SELECT tool_audits.id, tool_audits.user_id, tool_audits.session_id,
+               tool_audits.agent_id, tool_audits.tool_name,
+               tool_audits.arguments_json, tool_audits.result_json,
+               tool_audits.status, tool_audits.created_at, users.username
+        FROM tool_audits
+        LEFT JOIN users ON users.id = tool_audits.user_id
+        ORDER BY tool_audits.id DESC
+        LIMIT ?
+        """,
+        (max(1, min(limit, 500)),),
+    ).fetchall()
+    connection.close()
+    return [dict(row) for row in rows]
 
 
 def delete_session(session_id: str) -> None:

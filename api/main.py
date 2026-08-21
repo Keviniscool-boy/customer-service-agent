@@ -30,6 +30,7 @@ from agent.database import (
     load_messages,
     list_orders_for_user,
     list_refunds_for_user,
+    list_tool_audits,
     session_belongs_to_user,
     transition_order_status,
 )
@@ -1151,6 +1152,13 @@ def admin_session_messages(
         for row in rows
     ]
     return {"messages": messages}
+
+
+@app.get("/admin/tool-audits")
+def admin_tool_audits(user: dict = Depends(require_admin)):
+    """管理员查看学习版工具调用记录。"""
+
+    return {"audits": list_tool_audits()}
 
 
 @app.get("/orders")

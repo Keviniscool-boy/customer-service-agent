@@ -106,6 +106,7 @@ GET /admin/orders
 GET /admin/refunds
 GET /admin/sessions
 GET /admin/sessions/{session_id}/messages
+GET /admin/tool-audits
 GET /admin/agents/{agent_id}/knowledge
 POST /admin/agents/{agent_id}/knowledge
 POST /admin/agents/{agent_id}/knowledge/rebuild
@@ -115,3 +116,6 @@ DELETE /admin/agents/{agent_id}/knowledge/{filename}
 配置版本接口只返回版本号和时间，不直接返回完整 Prompt。恢复版本会生成新的当前版本，不会覆盖历史快照。删除用户自己的 Agent 时，会清理对应的本地版本目录；如果 Agent 使用 WeKnora，也会删除对应知识库。
 
 上传知识库使用 `multipart/form-data`，字段名是 `file`，目前只支持 UTF-8 编码的 `.md` 文件，单个文件最大 2 MB。
+
+`/admin/tool-audits` 返回最近的工具调用记录，包括用户、Agent、工具名、参数、结果和状态。
+退款在聊天中如果没有用户明确确认，会记录为 `awaiting_confirmation`，不会真正创建退款。

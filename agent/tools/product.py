@@ -1,14 +1,21 @@
-from agent.database import search_products
+from agent.business.repository import (
+    BusinessRepository,
+    get_business_repository,
+)
 
 
-def search_product(keyword: str):
+def search_product(
+    keyword: str,
+    repository: BusinessRepository | None = None,
+):
     """
     根据关键词搜索商品
     :param keyword: 搜索关键词
     :return: 商品列表
     """
     keyword = keyword.strip()
-    results = search_products(keyword)
+    repository = repository or get_business_repository()
+    results = repository.search_products(keyword)
 
     if not results:
         return {

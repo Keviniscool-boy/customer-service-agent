@@ -1,8 +1,6 @@
-from agent.database import (
-    create_refund,
-    find_active_refund,
-    get_order_for_user,
-    transition_order_status,
+from agent.business.repository import (
+    BusinessRepository,
+    get_business_repository,
 )
 
 
@@ -10,12 +8,14 @@ def apply_refund(
     order_id: str,
     reason: str,
     user_id: str | None = None,
+    repository: BusinessRepository | None = None,
 ):
     """
     申请退款。
     待发货订单可以自动处理，已发货订单转人工审核。
     """
-    order = get_order_for_user(order_id, user_id)
+    repository = repository or get_business_repository()
+    order = repository.get_order_for_user(order_id, user_id)
 
     if order is None:
         return {
@@ -23,7 +23,7 @@ def apply_refund(
             "message": f"没有找到订单 {order_id}",
         }
 
-    existing = find_active_refund(order_id, user_id)
+    existing = repository.find_active_refund(order_id, user_id)
     if existing:
         return {
             "success": False,
@@ -39,8 +39,8 @@ def apply_refund(
 
     if order["status"] == "待发货":
         if user_id:
-            transition_order_status(order_id, user_id, "已取消")
-        refund = create_refund(
+            repository.transition_order_status(order_id, user_id, "已取消")
+        refund = repository.create_refund(
             order_id,
             user_id,
             order["amount"],
@@ -58,7 +58,7 @@ def apply_refund(
             ),
         }
 
-    refund = create_refund(
+    refund = repository.create_refund(
         order_id,
         user_id,
         order["amount"],

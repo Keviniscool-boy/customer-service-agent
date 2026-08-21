@@ -27,6 +27,7 @@ def build_system_prompt(
         "- 只有已经创建人工工单时，requires_human 才能为 true。",
         "- 如果还需要询问用户是否转人工，requires_human 必须为 false。",
         "- “建议转人工”不等于已经转人工。",
+        "- 退款属于会改变订单状态的操作，必须先得到用户明确确认；没有确认时只能说明待确认，不能声称已经退款。",
     ]
 
     if agent_config.custom_prompt.strip():

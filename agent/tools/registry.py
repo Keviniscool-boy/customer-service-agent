@@ -12,6 +12,10 @@ from agent.tools.logistics import query_logistics
 from agent.tools.order import query_order
 from agent.tools.product import search_product
 from agent.tools.refund import apply_refund
+from agent.business.repository import BusinessRepository
+from agent.integrations.logistics import LogisticsProvider
+from functools import partial
+from agent.tools.policy import requires_confirmation
 
 
 ToolFunction = Callable[..., object]
@@ -24,6 +28,7 @@ class ToolRegistry:
         self._definitions: dict[str, dict] = {}
         self._functions: dict[str, ToolFunction] = {}
         self._user_scoped: set[str] = set()
+        self._confirmation_required: set[str] = set()
 
     def register(
         self,
@@ -31,6 +36,7 @@ class ToolRegistry:
         function: ToolFunction,
         *,
         user_scoped: bool = False,
+        confirmation_required: bool = False,
     ) -> None:
         function_data = definition.get("function", {})
         name = function_data.get("name")
@@ -43,6 +49,8 @@ class ToolRegistry:
         self._functions[name] = function
         if user_scoped:
             self._user_scoped.add(name)
+        if confirmation_required:
+            self._confirmation_required.add(name)
 
     def get_definitions(
         self,
@@ -73,6 +81,9 @@ class ToolRegistry:
         if user_id and name in self._user_scoped:
             call_arguments["user_id"] = user_id
         return function(**call_arguments)
+
+    def requires_confirmation(self, name: str) -> bool:
+        return name in self._confirmation_required
 
 
 TOOL_DEFINITIONS = [
@@ -116,7 +127,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "apply_refund",
-            "description": "申请退款，未发货订单可自动处理，已发货订单转人工审核",
+            "description": "申请退款，未发货订单可自动处理，已发货订单转人工审核；执行前必须得到用户明确确认",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -202,6 +213,8 @@ def get_default_registry(
     knowledge_base_path: str | None = None,
     knowledge_provider: str = "local",
     knowledge_base_id: str | None = None,
+    business_repository: BusinessRepository | None = None,
+    logistics_provider: LogisticsProvider | None = None,
 ) -> ToolRegistry:
     """创建一份默认工具注册表，避免不同 Agent 互相修改配置。"""
 
@@ -213,12 +226,23 @@ def get_default_registry(
         index_path = _resolve_knowledge_index_path(knowledge_base_path)
         if index_path != "data/index.json":
             knowledge_tool = make_search_knowledge(index_path)
+    tool_functions = {
+        "query_order": partial(query_order, repository=business_repository),
+        "query_logistics": partial(
+            query_logistics,
+            repository=business_repository,
+            provider=logistics_provider,
+        ),
+        "search_product": partial(search_product, repository=business_repository),
+        "apply_refund": partial(apply_refund, repository=business_repository),
+    }
     for definition in TOOL_DEFINITIONS:
         name = definition["function"]["name"]
         registry.register(
             definition,
-            knowledge_tool if name == "search_knowledge" else TOOL_FUNCTIONS[name],
+            knowledge_tool if name == "search_knowledge" else tool_functions[name],
             user_scoped=name in USER_SCOPED_TOOLS,
+            confirmation_required=requires_confirmation(name),
         )
     return registry
 
