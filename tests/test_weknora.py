@@ -37,7 +37,7 @@ class WeKnoraClientTest(unittest.TestCase):
                     "score": 0.88,
                     "knowledge_title": "退货政策",
                     "knowledge_filename": "returns.md",
-                    "text": "七天无理由退货。",
+                    "content": "七天无理由退货。",
                 }
             ]
             result = json.loads(
