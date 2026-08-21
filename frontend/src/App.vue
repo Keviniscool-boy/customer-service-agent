@@ -249,6 +249,20 @@ async function loadAgentKnowledge() {
   }
 }
 
+async function waitForAgentKnowledge(filename) {
+  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    await loadAgentKnowledge()
+    const status = agentKnowledge.value
+    if (status?.provider !== 'weknora' || !filename) return
+    const document = (status.documents || []).find(
+      (item) => (item.file_name || item.title) === filename,
+    )
+    if (document?.parse_status === 'completed' || document?.parse_status === 'failed') return
+    await new Promise((resolve) => window.setTimeout(resolve, 2000))
+  }
+}
+
 async function previewAgentPrompt() {
   if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
   agentManagerLoading.value = true
@@ -342,12 +356,12 @@ async function uploadAgentKnowledge() {
   try {
     const formData = new FormData()
     formData.append('file', agentFile.value)
-    await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge`, {
+    const data = await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge`, {
       method: 'POST',
       body: formData,
     })
     agentFile.value = null
-    await loadAgentKnowledge()
+    await waitForAgentKnowledge(data.filename)
   } catch (error) {
     agentManagerError.value = error.message
   } finally {
@@ -663,8 +677,8 @@ onMounted(() => {
             <template v-if="agentManagerMode === 'edit'">
               <div class="knowledge-manager">
                 <div class="knowledge-manager-heading">
-                  <div><h3>个人知识库</h3><p>上传 Markdown 后会自动建立索引。</p></div>
-                  <span>{{ agentKnowledge?.index_ready ? '已就绪' : '未就绪' }}</span>
+                  <div><h3>个人知识库</h3><p>上传 Markdown 后由 WeKnora 自动解析。</p></div>
+                  <span>{{ agentKnowledge?.index_ready ? '已就绪' : agentKnowledge?.provider === 'weknora' ? '解析中' : '未就绪' }}</span>
                 </div>
                 <div class="knowledge-upload-row">
                   <label class="file-picker">

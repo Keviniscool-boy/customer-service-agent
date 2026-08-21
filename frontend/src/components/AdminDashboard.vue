@@ -120,6 +120,20 @@ async function loadKnowledgeStatus() {
   }
 }
 
+async function waitForKnowledgeReady(filename) {
+  if (!selectedAgentId.value || !filename) return
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    await loadKnowledgeStatus()
+    const status = knowledgeStatus.value
+    if (status?.provider !== 'weknora') return
+    const document = (status.documents || []).find(
+      (item) => (item.file_name || item.title) === filename,
+    )
+    if (document?.parse_status === 'completed' || document?.parse_status === 'failed') return
+    await new Promise((resolve) => window.setTimeout(resolve, 2000))
+  }
+}
+
 async function saveAgentConfig() {
   if (!selectedAgentId.value || !agentForm.value || !agentConfig.value) return
   knowledgeLoading.value = true
@@ -159,12 +173,12 @@ async function uploadKnowledge() {
   try {
     const formData = new FormData()
     formData.append('file', knowledgeFile.value)
-    await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`, {
+    const data = await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`, {
       method: 'POST',
       body: formData,
     })
     knowledgeFile.value = null
-    await loadKnowledgeStatus()
+    await waitForKnowledgeReady(data.filename)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -285,7 +299,7 @@ onMounted(refresh)
         <div class="section-heading">
           <div>
             <h2>Agent 知识库</h2>
-            <p class="section-hint">上传 Markdown 后会自动切片并重建索引。</p>
+            <p class="section-hint">上传 Markdown 后由 WeKnora 自动解析和检索。</p>
           </div>
           <select v-model="selectedAgentId" class="admin-select" @change="loadKnowledgeStatus">
             <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">{{ agent.name }}</option>
@@ -320,7 +334,7 @@ onMounted(refresh)
           </label>
           <button class="refresh-button" type="button" :disabled="knowledgeLoading || !knowledgeFile" @click="uploadKnowledge">{{ knowledgeLoading ? '处理中...' : '上传并索引' }}</button>
           <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="rebuildKnowledge">重建索引</button>
-          <span class="index-state">{{ knowledgeStatus.index_ready ? '索引已就绪' : '索引未就绪' }}</span>
+          <span class="index-state">{{ knowledgeStatus.index_ready ? '索引已就绪' : knowledgeStatus.provider === 'weknora' ? 'WeKnora 解析中' : '索引未就绪' }}</span>
         </div>
         <div v-if="knowledgeStatus?.files?.length" class="knowledge-files">
           <div v-for="filename in knowledgeStatus.files" :key="filename" class="knowledge-file">
