@@ -90,7 +90,17 @@ Agent 启动时会尝试连接 `MCP Server`。如果 MCP 没有启动，Agent �
 
 管理员或 Agent 所有者可以在页面上传 Markdown。第一次上传时，如果没有填写知识库 ID，系统会自动创建 WeKnora 知识库；之后通过保存的知识库 ID 查询。
 
-WeKnora 独立运行在 `C:\Users\Kevin\Desktop\agent\WeKnora-standalone`，服务地址默认是 `http://127.0.0.1:8080`。它自己的 PostgreSQL、Redis 和文档解析服务由 WeKnora Compose 管理。
+WeKnora 需要单独下载并运行，服务地址默认是 `http://127.0.0.1:8080`。它自己的 PostgreSQL、Redis 和文档解析服务由 WeKnora Compose 管理，不要把 WeKnora 的内部表接到当前项目数据库中。
+
+### WeKnora 配置顺序
+
+1. 进入 WeKnora 独立目录，运行 `docker compose up -d`。
+2. 打开 WeKnora 页面 `http://127.0.0.1:8081`，配置可用的 Embedding 模型和模型 API Key。
+3. 在 WeKnora 的模型列表中找到模型的 `id`，把这个 ID 填入当前项目的 `WEKNORA_EMBEDDING_MODEL_ID`。模型名称（例如 `text-embedding-v1`）不一定是真实 ID，不能直接混用。
+4. `WEKNORA_KNOWLEDGE_BASE_ID` 可以留空。第一次上传 Markdown 时，当前项目会自动创建知识库并保存本地 ID；如果已经有知识库，也可以直接填写它的 ID。
+5. 启动当前项目后，从项目页面上传 Markdown。上传成功后需要等待状态变为 `completed`，再开始提问。
+
+WeKnora 后端健康地址是 `http://127.0.0.1:8080/health`，WeKnora 页面地址是 `http://127.0.0.1:8081`。
 
 ### 离线备用方案
 
@@ -182,7 +192,7 @@ Copy-Item .env.example .env
 | `MCP_SERVER_URL` | MCP 服务地址，不启动 MCP 时可保持默认值 |
 | `WEKNORA_BASE_URL` | WeKnora 后端地址 |
 | `WEKNORA_API_KEY` | WeKnora API Key，只保存在后端环境变量 |
-| `WEKNORA_EMBEDDING_MODEL_ID` | 自动创建 WeKnora 知识库时使用的向量模型 ID |
+| `WEKNORA_EMBEDDING_MODEL_ID` | WeKnora 模型列表返回的向量模型 ID，不是模型名称 |
 | `KNOWLEDGE_PROVIDER` | 默认知识库服务，推荐 `weknora`，离线时可用 `local` |
 | `WEKNORA_KNOWLEDGE_BASE_ID` | 已有 WeKnora 知识库 ID，留空则首次上传时自动创建 |
 | `REDIS_URL` | 可选 Redis 地址，填写后启用共享登录失败限流 |
