@@ -18,6 +18,8 @@
   "custom_prompt": "",
   "behavior_rules": [],
   "forbidden_topics": [],
+  "knowledge_provider": "local",
+  "knowledge_base_id": null,
   "knowledge_base_path": "knowledge",
   "enabled_tools": [
     "query_order",

@@ -3,7 +3,11 @@
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
-from agent.tools.knowledge import make_search_knowledge, search_knowledge
+from agent.tools.knowledge import (
+    make_search_knowledge,
+    make_weknora_search_knowledge,
+    search_knowledge,
+)
 from agent.tools.logistics import query_logistics
 from agent.tools.order import query_order
 from agent.tools.product import search_product
@@ -196,14 +200,19 @@ def _resolve_knowledge_index_path(knowledge_base_path: str | None):
 
 def get_default_registry(
     knowledge_base_path: str | None = None,
+    knowledge_provider: str = "local",
+    knowledge_base_id: str | None = None,
 ) -> ToolRegistry:
     """创建一份默认工具注册表，避免不同 Agent 互相修改配置。"""
 
     registry = ToolRegistry()
-    knowledge_tool = search_knowledge
-    index_path = _resolve_knowledge_index_path(knowledge_base_path)
-    if index_path != "data/index.json":
-        knowledge_tool = make_search_knowledge(index_path)
+    if knowledge_provider == "weknora":
+        knowledge_tool = make_weknora_search_knowledge(knowledge_base_id or "")
+    else:
+        knowledge_tool = search_knowledge
+        index_path = _resolve_knowledge_index_path(knowledge_base_path)
+        if index_path != "data/index.json":
+            knowledge_tool = make_search_knowledge(index_path)
     for definition in TOOL_DEFINITIONS:
         name = definition["function"]["name"]
         registry.register(

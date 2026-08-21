@@ -38,7 +38,9 @@ class EcomAgent:
         self.user_id = user_id
         self.agent_config = agent_config or get_default_ecom_agent_config()
         self.tool_registry = tool_registry or get_default_registry(
-            self.agent_config.knowledge_base_path
+            self.agent_config.knowledge_base_path,
+            self.agent_config.knowledge_provider,
+            self.agent_config.knowledge_base_id,
         )
         if session_id and not session_belongs_to_user(
             session_id,

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -30,6 +30,8 @@ class AgentConfig(BaseModel):
     custom_prompt: str = Field(default="", max_length=4000)
     behavior_rules: list[str] = Field(default_factory=list, max_length=20)
     forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
+    knowledge_provider: Literal["local", "weknora"] = "local"
+    knowledge_base_id: str | None = Field(default=None, max_length=100)
     knowledge_base_path: str = Field(min_length=1)
     enabled_tools: list[str] = Field(default_factory=list)
     model_name: str | None = None

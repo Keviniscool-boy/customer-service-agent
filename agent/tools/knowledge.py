@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
+from agent.integrations.weknora import WeKnoraClient, WeKnoraError
 from agent.rag.retriever import Retriever
+from config.settings import settings
 
 
 _retriever = Retriever()
@@ -74,5 +76,57 @@ def make_search_knowledge(index_path: str | Path):
         if retriever is None:
             retriever = Retriever(index_path)
         return _search_with_retriever(retriever, query, top_k)
+
+    return search
+
+
+def make_weknora_search_knowledge(knowledge_base_id: str):
+    """创建一个调用 WeKnora 混合检索的知识库工具。"""
+
+    client = WeKnoraClient(
+        settings.weknora_base_url,
+        settings.weknora_api_key,
+        settings.weknora_timeout_seconds,
+    )
+
+    def search(query: str, top_k: int = 2) -> str:
+        if not query or not query.strip():
+            return json.dumps(
+                {"success": False, "message": "搜索问题不能为空"},
+                ensure_ascii=False,
+            )
+        try:
+            results = client.search(knowledge_base_id, query, top_k)
+        except WeKnoraError as error:
+            return json.dumps(
+                {
+                    "success": False,
+                    "message": "知识库暂时不可用",
+                    "error": str(error),
+                },
+                ensure_ascii=False,
+            )
+
+        items = [
+            {
+                "score": round(float(item.get("score", 0)), 4),
+                "doc": item.get("knowledge_title")
+                or item.get("file_name")
+                or "WeKnora 知识库",
+                "section": item.get("section") or item.get("knowledge_filename", ""),
+                "text": item.get("text") or item.get("content") or item.get("chunk", ""),
+            }
+            for item in results
+            if isinstance(item, dict)
+        ]
+        if not items:
+            return json.dumps(
+                {"success": False, "message": "没有找到相关知识"},
+                ensure_ascii=False,
+            )
+        return json.dumps(
+            {"success": True, "data": items},
+            ensure_ascii=False,
+        )
 
     return search
