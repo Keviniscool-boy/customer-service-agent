@@ -190,12 +190,34 @@ class RefundCreateRequest(BaseModel):
 
 @app.on_event("startup")
 def startup():
-    init_db()
+    try:
+        init_db()
+    except Exception as error:
+        logger.exception("数据库初始化失败")
+        raise RuntimeError(
+            "数据库初始化失败，请检查 DATABASE_BACKEND、POSTGRES_DSN 和数据库服务"
+        ) from error
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    connection = None
+    try:
+        connection = get_connection()
+        connection.execute("SELECT 1 AS ok").fetchone()
+    except Exception as error:
+        logger.exception("数据库健康检查失败")
+        raise HTTPException(
+            status_code=503,
+            detail="数据库暂时不可用，请检查数据库配置和服务状态",
+        ) from error
+    finally:
+        if connection is not None:
+            connection.close()
+    return {
+        "status": "ok",
+        "database_backend": settings.database_backend,
+    }
 
 
 @app.get("/products")
