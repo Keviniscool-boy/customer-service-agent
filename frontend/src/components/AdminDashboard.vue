@@ -21,6 +21,7 @@ const selectedAgentId = ref(null)
 const agentConfig = ref(null)
 const agentForm = ref(null)
 const knowledgeStatus = ref(null)
+const agentVersions = ref([])
 const knowledgeFile = ref(null)
 const knowledgeLoading = ref(false)
 const selectedSession = ref(null)
@@ -93,11 +94,13 @@ async function refresh() {
 async function loadKnowledgeStatus() {
   if (!selectedAgentId.value) return
   try {
-    const [statusData, configData] = await Promise.all([
+    const [statusData, configData, versionsData] = await Promise.all([
       getAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`),
       getAdminData(`/admin/agents/${selectedAgentId.value}`),
+      getAdminData(`/admin/agents/${selectedAgentId.value}/versions`),
     ])
     knowledgeStatus.value = statusData
+    agentVersions.value = versionsData.versions || []
     agentConfig.value = configData.agent
     agentForm.value = {
       name: agentConfig.value.name,
@@ -117,6 +120,24 @@ async function loadKnowledgeStatus() {
     }
   } catch (requestError) {
     error.value = requestError.message
+  }
+}
+
+async function restoreAgentVersion(version) {
+  if (!selectedAgentId.value) return
+  if (!window.confirm(`确定恢复到配置版本 v${version} 吗？当前配置会保留为新版本。`)) return
+  knowledgeLoading.value = true
+  error.value = ''
+  try {
+    await sendAdminData(
+      `/admin/agents/${selectedAgentId.value}/versions/${version}/restore`,
+      { method: 'POST' },
+    )
+    await loadKnowledgeStatus()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
   }
 }
 
@@ -342,7 +363,19 @@ onMounted(refresh)
             <button type="button" :disabled="knowledgeLoading" @click="deleteKnowledge(filename)">删除</button>
           </div>
         </div>
-        <p v-else class="empty-cell">当前 Agent 还没有 Markdown 知识库文件。</p>
+        <div class="agent-versions">
+          <div class="knowledge-manager-heading">
+            <div><h3>配置版本</h3><p>每次保存都会保留快照，最多保留最近 20 个版本。</p></div>
+          </div>
+          <div v-if="agentVersions.length" class="agent-version-list">
+            <div v-for="item in agentVersions" :key="item.version" class="agent-version-item">
+              <span>v{{ item.version }} · {{ item.created_at }}</span>
+              <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="restoreAgentVersion(item.version)">恢复</button>
+            </div>
+          </div>
+          <p v-else class="empty-cell">还没有配置版本。</p>
+        </div>
+        <p v-if="!knowledgeStatus?.files?.length" class="empty-cell">当前 Agent 还没有 Markdown 知识库文件。</p>
       </section>
 
       <section v-else-if="activeTab === 'conversations'" class="conversation-layout">

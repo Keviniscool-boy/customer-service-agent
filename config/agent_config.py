@@ -1,6 +1,7 @@
 """Agent 的可配置项和配置文件加载逻辑。"""
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -12,6 +13,8 @@ from config.settings import settings
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_AGENT_CONFIG_PATH = PROJECT_ROOT / "configs" / "agents" / "ecommerce.json"
 AGENT_CONFIG_DIR = DEFAULT_AGENT_CONFIG_PATH.parent
+AGENT_VERSION_DIR = PROJECT_ROOT / "data" / "agent_versions"
+MAX_AGENT_VERSIONS = 20
 
 
 class AgentConfig(BaseModel):
@@ -135,7 +138,99 @@ def save_agent_config(
         config.model_dump_json(indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+    if directory is None:
+        create_agent_config_version(config)
     return path
+
+
+def _agent_version_directory(
+    agent_id: str,
+    directory: str | Path | None = None,
+) -> Path:
+    version_root = Path(directory) if directory else AGENT_VERSION_DIR
+    return version_root / agent_id
+
+
+def create_agent_config_version(
+    config: AgentConfig,
+    directory: str | Path | None = None,
+) -> dict[str, Any]:
+    """保存一份配置快照，并清理超出上限的旧快照。"""
+
+    version_directory = _agent_version_directory(config.agent_id, directory)
+    version_directory.mkdir(parents=True, exist_ok=True)
+    version_paths = sorted(version_directory.glob("*.json"))
+    version_numbers = [
+        int(path.stem)
+        for path in version_paths
+        if path.stem.isdigit()
+    ]
+    version = max(version_numbers, default=0) + 1
+    snapshot = {
+        "version": version,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "config": config.model_dump(mode="json"),
+    }
+    snapshot_path = version_directory / f"{version:06d}.json"
+    snapshot_path.write_text(
+        json.dumps(snapshot, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    all_versions = sorted(
+        version_directory.glob("*.json"),
+        key=lambda path: int(path.stem) if path.stem.isdigit() else -1,
+    )
+    for old_path in all_versions[:-MAX_AGENT_VERSIONS]:
+        old_path.unlink(missing_ok=True)
+    return snapshot
+
+
+def list_agent_config_versions(
+    agent_id: str,
+    directory: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """返回配置版本的摘要，不返回完整 Prompt 内容。"""
+
+    version_directory = _agent_version_directory(agent_id, directory)
+    if not version_directory.is_dir():
+        return []
+
+    versions = []
+    for path in sorted(version_directory.glob("*.json"), reverse=True):
+        try:
+            snapshot = json.loads(path.read_text(encoding="utf-8"))
+            versions.append(
+                {
+                    "version": snapshot["version"],
+                    "created_at": snapshot["created_at"],
+                }
+            )
+        except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+            raise ValueError(f"Agent 配置版本文件无效：{path}") from error
+    return versions
+
+
+def load_agent_config_version(
+    agent_id: str,
+    version: int,
+    directory: str | Path | None = None,
+) -> AgentConfig:
+    """读取并校验指定版本的 Agent 配置。"""
+
+    if version < 1:
+        raise ValueError("配置版本号必须大于 0")
+    path = _agent_version_directory(agent_id, directory) / f"{version:06d}.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"Agent 配置版本不存在：{agent_id} v{version}")
+    try:
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+        config = AgentConfig.model_validate(snapshot["config"])
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        raise ValueError(f"Agent 配置版本文件无效：{path}") from error
+    if config.agent_id != agent_id:
+        raise ValueError("Agent 配置版本中的 Agent ID 不匹配")
+    return config
 
 
 def delete_agent_config(

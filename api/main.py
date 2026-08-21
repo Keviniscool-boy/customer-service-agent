@@ -43,11 +43,14 @@ from api.rate_limit import create_login_rate_limiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
+    AGENT_VERSION_DIR,
     PROJECT_ROOT,
     AGENT_CONFIG_DIR,
     delete_agent_config,
     get_default_ecom_agent_config,
     load_agent_config_by_id,
+    list_agent_config_versions,
+    load_agent_config_version,
     load_agent_configs,
     save_agent_config,
 )
@@ -617,6 +620,39 @@ def user_agent_prompt_preview(
     return build_agent_prompt_preview(get_user_agent_config(agent_id, user))
 
 
+def agent_config_versions(agent_id: str, user: dict):
+    get_owned_agent_config(agent_id, user)
+    try:
+        return {"agent_id": agent_id, "versions": list_agent_config_versions(agent_id)}
+    except ValueError as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本暂时不可用") from error
+
+
+@app.get("/agents/{agent_id}/versions")
+def user_agent_versions(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    return agent_config_versions(agent_id, user)
+
+
+@app.post("/agents/{agent_id}/versions/{version}/restore")
+def restore_user_agent_version(
+    agent_id: str,
+    version: int,
+    user: dict = Depends(get_current_user),
+):
+    config = get_owned_agent_config(agent_id, user)
+    try:
+        restored = load_agent_config_version(agent_id, version)
+        save_agent_config(restored, overwrite=True)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Agent 配置版本不存在") from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本恢复失败") from error
+    return {"agent": restored.model_dump(), "restored_version": version}
+
+
 @app.put("/agents/{agent_id}")
 def update_user_agent(
     agent_id: str,
@@ -664,10 +700,18 @@ def delete_user_agent(
         raise HTTPException(status_code=400, detail="Agent 知识库路径不符合用户目录")
 
     config_path = AGENT_CONFIG_DIR / f"{agent_id}.json"
+    version_dir = AGENT_VERSION_DIR / agent_id
+    if config.knowledge_provider == "weknora" and config.knowledge_base_id:
+        try:
+            get_weknora_client().delete_knowledge_base(config.knowledge_base_id)
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
     try:
         delete_agent_config(agent_id)
         if source_dir.is_dir():
             shutil.rmtree(source_dir)
+        if version_dir.is_dir():
+            shutil.rmtree(version_dir)
         user_agent_root = source_dir.parent
         if user_agent_root.is_dir() and not any(user_agent_root.iterdir()):
             user_agent_root.rmdir()
@@ -692,6 +736,35 @@ def admin_agent_prompt_preview(
     user: dict = Depends(require_admin),
 ):
     return build_agent_prompt_preview(get_agent_config(agent_id))
+
+
+@app.get("/admin/agents/{agent_id}/versions")
+def admin_agent_versions(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    get_agent_config(agent_id)
+    try:
+        return {"agent_id": agent_id, "versions": list_agent_config_versions(agent_id)}
+    except ValueError as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本暂时不可用") from error
+
+
+@app.post("/admin/agents/{agent_id}/versions/{version}/restore")
+def restore_admin_agent_version(
+    agent_id: str,
+    version: int,
+    user: dict = Depends(require_admin),
+):
+    get_agent_config(agent_id)
+    try:
+        restored = load_agent_config_version(agent_id, version)
+        save_agent_config(restored, overwrite=True)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Agent 配置版本不存在") from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本恢复失败") from error
+    return {"agent": restored.model_dump(), "restored_version": version}
 
 
 @app.post("/admin/agents")

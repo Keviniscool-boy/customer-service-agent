@@ -280,7 +280,9 @@ td { color: #31413f; }
 .danger-button:disabled { cursor: wait; opacity: 0.6; }
 .agent-tool-note { margin: 0; color: #687775; font-size: 12px; line-height: 1.6; }
 .manager-error { margin: 0; padding: 10px 12px; color: #9b302c; background: #fbeeed; border-radius: 5px; font-size: 12px; line-height: 1.5; }
-.knowledge-manager { padding-top: 20px; border-top: 1px solid #e0e8e5; }
+.knowledge-manager, .agent-versions { padding-top: 20px; border-top: 1px solid #e0e8e5; }
+.agent-version-list { display: grid; gap: 8px; }
+.agent-version-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; background: #f7faf8; border: 1px solid #dce8e3; border-radius: 5px; color: #536360; font-size: 12px; }
 .knowledge-manager-heading, .knowledge-upload-row, .owned-knowledge-item { display: flex; align-items: center; gap: 10px; }
 .knowledge-manager-heading { justify-content: space-between; margin-bottom: 14px; }
 .knowledge-manager-heading h3 { margin: 0; color: #17212b; font-size: 15px; }

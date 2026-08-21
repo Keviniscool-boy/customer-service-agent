@@ -31,6 +31,7 @@ const agentManagerLoading = ref(false)
 const agentManagerError = ref('')
 const agentFile = ref(null)
 const agentKnowledge = ref(null)
+const agentVersions = ref([])
 const agentPromptPreview = ref('')
 const agentForm = ref(createEmptyAgentForm())
 
@@ -197,6 +198,7 @@ function openAgentManager() {
   agentManagerError.value = ''
   agentForm.value = createEmptyAgentForm()
   agentKnowledge.value = null
+  agentVersions.value = []
   agentPromptPreview.value = ''
   agentFile.value = null
 }
@@ -205,6 +207,7 @@ function closeAgentManager() {
   showAgentManager.value = false
   agentManagerError.value = ''
   agentFile.value = null
+  agentVersions.value = []
   agentPromptPreview.value = ''
 }
 
@@ -230,7 +233,7 @@ async function editOwnedAgent(agentId) {
       model_name: config.model_name || '',
       temperature: config.temperature ?? '',
     }
-    await loadAgentKnowledge()
+    await Promise.all([loadAgentKnowledge(), loadAgentVersions()])
   } catch (error) {
     agentManagerError.value = error.message
   } finally {
@@ -246,6 +249,34 @@ async function loadAgentKnowledge() {
     )
   } catch (error) {
     agentManagerError.value = error.message
+  }
+}
+
+async function loadAgentVersions() {
+  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
+  try {
+    const data = await apiRequest(`/agents/${agentForm.value.agent_id}/versions`)
+    agentVersions.value = data.versions || []
+  } catch (error) {
+    agentManagerError.value = error.message
+  }
+}
+
+async function restoreAgentVersion(version) {
+  if (!formHasAgent()) return
+  if (!window.confirm(`确定恢复到配置版本 v${version} 吗？当前配置会保留为新版本。`)) return
+  agentManagerLoading.value = true
+  agentManagerError.value = ''
+  try {
+    await apiRequest(
+      `/agents/${agentForm.value.agent_id}/versions/${version}/restore`,
+      { method: 'POST' },
+    )
+    await editOwnedAgent(agentForm.value.agent_id)
+  } catch (error) {
+    agentManagerError.value = error.message
+  } finally {
+    agentManagerLoading.value = false
   }
 }
 
@@ -695,6 +726,18 @@ onMounted(() => {
                   </div>
                 </div>
                 <p v-else class="manager-empty">还没有上传 Markdown 文件</p>
+              </div>
+              <div class="agent-versions">
+                <div class="knowledge-manager-heading">
+                  <div><h3>配置版本</h3><p>每次保存都会保留快照，最多保留最近 20 个版本。</p></div>
+                </div>
+                <div v-if="agentVersions.length" class="agent-version-list">
+                  <div v-for="item in agentVersions" :key="item.version" class="agent-version-item">
+                    <span>v{{ item.version }} · {{ item.created_at }}</span>
+                    <button class="refresh-button" type="button" :disabled="agentManagerLoading" @click="restoreAgentVersion(item.version)">恢复</button>
+                  </div>
+                </div>
+                <p v-else class="manager-empty">还没有配置版本。</p>
               </div>
             </template>
           </form>

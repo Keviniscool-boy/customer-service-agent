@@ -144,18 +144,25 @@ class WeKnoraClientTest(unittest.TestCase):
             {"success": True, "data": {"id": "doc-1", "parse_status": "pending"}}
         )
         delete_response = self.response({"success": True})
+        delete_base_response = self.response({"success": True})
         with patch(
             "agent.integrations.weknora.urlopen",
-            side_effect=[reparse_response, delete_response],
+            side_effect=[reparse_response, delete_response, delete_base_response],
         ) as open_mock:
             client = WeKnoraClient("http://weknora.local", "secret-key")
             reparsed = client.reparse_knowledge("doc-1")
             deleted = client.delete_knowledge("doc-1")
+            deleted_base = client.delete_knowledge_base("kb-1")
 
         self.assertEqual(reparsed["parse_status"], "pending")
         self.assertTrue(deleted["success"])
+        self.assertTrue(deleted_base["success"])
         self.assertEqual(open_mock.call_args_list[0].args[0].method, "POST")
         self.assertEqual(open_mock.call_args_list[1].args[0].method, "DELETE")
+        self.assertEqual(
+            open_mock.call_args_list[2].args[0].full_url,
+            "http://weknora.local/api/v1/knowledge-bases/kb-1",
+        )
 
     def test_tool_converts_weknora_results_to_agent_format(self):
         with patch("agent.tools.knowledge.WeKnoraClient.search") as search_mock:

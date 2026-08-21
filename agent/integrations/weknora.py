@@ -192,6 +192,14 @@ class WeKnoraClient:
             method="DELETE",
         )
 
+    def delete_knowledge_base(self, knowledge_base_id: str) -> dict | list:
+        if not knowledge_base_id:
+            raise WeKnoraError("没有配置 WeKnora knowledge_base_id")
+        return self._request(
+            f"/api/v1/knowledge-bases/{knowledge_base_id}",
+            method="DELETE",
+        )
+
     def _request(
         self,
         path: str,

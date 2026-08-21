@@ -152,6 +152,8 @@ Markdown 文档
 
 用户只能修改自己拥有的 Agent，并管理自己 Agent 下的 Markdown 知识库。
 
+每次保存 Agent 配置都会在 `data/agent_versions/` 留下一份快照，最多保留最近 20 个版本。用户只能查看和恢复自己私有 Agent 的版本，管理员可以管理所有 Agent 的版本。删除私有 Agent 时，会同时清理本地知识库目录、版本快照和对应的 WeKnora 知识库。
+
 ## 6. 数据库和会话记忆
 
 SQLite 数据库路径：`data/app.db`。
@@ -336,6 +338,8 @@ GET  /agents/{agent_id}/knowledge
 POST /agents/{agent_id}/knowledge
 POST /agents/{agent_id}/knowledge/rebuild
 DELETE /agents/{agent_id}/knowledge/{filename}
+GET  /agents/{agent_id}/versions
+POST /agents/{agent_id}/versions/{version}/restore
 ```
 
 ### 当前用户接口
@@ -377,6 +381,10 @@ GET /admin/orders
 GET /admin/refunds
 GET /admin/sessions
 GET /admin/sessions/{session_id}/messages
+GET /admin/agents/{agent_id}
+PUT /admin/agents/{agent_id}
+GET /admin/agents/{agent_id}/versions
+POST /admin/agents/{agent_id}/versions/{version}/restore
 ```
 
 完整接口记录见 [API接口清单.md](docs/API接口清单.md)，Swagger 地址是 <http://127.0.0.1:8765/docs>。

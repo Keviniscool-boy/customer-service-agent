@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -141,6 +141,38 @@ class AgentAccessTest(unittest.TestCase):
         self.assertIn("先给结论，再给步骤。", response.json()["prompt"])
         self.assertIn("不确定时说明", response.json()["prompt"])
 
+    def test_owner_can_list_and_restore_agent_config_version(self):
+        private_config = self._config(
+            "private-a",
+            owner_user_id=self.user_a_id,
+            is_public=False,
+        )
+        restored_config = private_config.model_copy(update={"name": "旧版本助手"})
+        with patch(
+            "api.main.load_agent_config_by_id",
+            return_value=private_config,
+        ), patch(
+            "api.main.list_agent_config_versions",
+            return_value=[{"version": 1, "created_at": "2026-08-21T00:00:00+00:00"}],
+        ), patch(
+            "api.main.load_agent_config_version",
+            return_value=restored_config,
+        ), patch("api.main.save_agent_config") as save_mock:
+            versions = self.client.get(
+                "/agents/private-a/versions",
+                headers=self.headers_a,
+            )
+            restored = self.client.post(
+                "/agents/private-a/versions/1/restore",
+                headers=self.headers_a,
+            )
+
+        self.assertEqual(versions.status_code, 200)
+        self.assertEqual(versions.json()["versions"][0]["version"], 1)
+        self.assertEqual(restored.status_code, 200)
+        self.assertEqual(restored.json()["agent"]["name"], "旧版本助手")
+        save_mock.assert_called_once_with(restored_config, overwrite=True)
+
     def test_user_can_create_a_private_agent_with_server_owned_storage_path(self):
         payload = {
             "agent_id": "my-agent",
@@ -193,7 +225,7 @@ class AgentAccessTest(unittest.TestCase):
             "private-a",
             owner_user_id=self.user_a_id,
             is_public=False,
-        )
+        ).model_copy(update={"knowledge_provider": "local"})
         with tempfile.TemporaryDirectory() as knowledge_dir:
             source_dir = Path(knowledge_dir) / "source"
             chunks_path = Path(knowledge_dir) / "chunks.json"
@@ -227,7 +259,7 @@ class AgentAccessTest(unittest.TestCase):
             "private-a",
             owner_user_id=self.user_a_id,
             is_public=False,
-        )
+        ).model_copy(update={"knowledge_base_id": "kb-1"})
         source_dir = (
             Path.cwd()
             / "data"
@@ -244,7 +276,10 @@ class AgentAccessTest(unittest.TestCase):
             ), patch(
                 "api.main.get_agent_knowledge_paths",
                 return_value=(source_dir, source_dir / "chunks.json", source_dir / "index.json"),
-            ), patch("api.main.delete_agent_config") as delete_mock:
+            ), patch("api.main.delete_agent_config") as delete_mock, patch(
+                "api.main.get_weknora_client",
+                return_value=MagicMock(),
+            ) as client_mock:
                 response = self.client.delete(
                     "/agents/private-a",
                     headers=self.headers_a,
@@ -252,6 +287,7 @@ class AgentAccessTest(unittest.TestCase):
 
             self.assertEqual(response.status_code, 200)
             delete_mock.assert_called_once_with("private-a")
+            client_mock.return_value.delete_knowledge_base.assert_called_once_with("kb-1")
             self.assertFalse(source_dir.exists())
         finally:
             if source_dir.exists():
