@@ -500,3 +500,4 @@ ecom-service-agent-learning/
 - [swagger.md](docs/swagger.md)：Swagger 测试记录
 - [RAG测试记录.md](docs/RAG测试记录.md)：知识库检索测试
 - [压测记录.md](docs/压测记录.md)：Locust 压测结果
+- [业务连接器说明.md](docs/业务连接器说明.md)：以后接真实订单和物流系统时的替换边界
