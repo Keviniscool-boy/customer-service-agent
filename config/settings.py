@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     weknora_base_url: str = "http://127.0.0.1:8080"
     weknora_api_key: str = ""
     weknora_timeout_seconds: float = 10.0
+    weknora_embedding_model_id: str = ""
     database_path: str = "data/app.db"
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"

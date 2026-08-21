@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from agent.chat import EcomAgent
+from agent.integrations.weknora import WeKnoraClient, WeKnoraError
 from agent.presentation import visible_reply
 from agent.tools.registry import get_default_registry
 from agent.rag.knowledge_base import (
@@ -385,6 +386,122 @@ def get_agent_knowledge_paths(agent_config):
     return source_dir, source_dir / "chunks.json", source_dir / "index.json"
 
 
+def get_weknora_client() -> WeKnoraClient:
+    return WeKnoraClient(
+        settings.weknora_base_url,
+        settings.weknora_api_key,
+        settings.weknora_timeout_seconds,
+    )
+
+
+def weknora_http_exception(error: WeKnoraError) -> HTTPException:
+    logger.exception("WeKnora 知识库请求失败")
+    status_code = 409 if "HTTP 409" in str(error) else 502
+    return HTTPException(
+        status_code=status_code,
+        detail=f"WeKnora 知识库服务调用失败：{error}",
+    )
+
+
+def weknora_knowledge_status(agent_id: str, agent_config: AgentConfig) -> dict:
+    knowledge_base_id = agent_config.knowledge_base_id
+    if not knowledge_base_id:
+        return {
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": None,
+            "files": [],
+            "documents": [],
+            "index_ready": False,
+        }
+
+    try:
+        documents = get_weknora_client().list_knowledge(knowledge_base_id)
+    except WeKnoraError as error:
+        raise weknora_http_exception(error) from error
+
+    return {
+        "agent_id": agent_id,
+        "provider": "weknora",
+        "knowledge_base_id": knowledge_base_id,
+        "files": [
+            document.get("file_name") or document.get("title", "")
+            for document in documents
+            if isinstance(document, dict)
+        ],
+        "documents": documents,
+        "index_ready": bool(documents)
+        and all(
+            document.get("parse_status") == "completed"
+            for document in documents
+            if isinstance(document, dict)
+        ),
+    }
+
+
+async def upload_weknora_knowledge(
+    agent_id: str,
+    agent_config: AgentConfig,
+    file: UploadFile,
+) -> dict:
+    filename = Path(file.filename or "").name
+    if not filename or filename != file.filename:
+        raise HTTPException(status_code=400, detail="文件名无效")
+    if Path(filename).suffix.lower() != ".md":
+        raise HTTPException(status_code=400, detail="只支持上传 .md 文件")
+
+    content = await file.read(DEFAULT_MAX_FILE_BYTES + 1)
+    if len(content) > DEFAULT_MAX_FILE_BYTES:
+        raise HTTPException(status_code=400, detail="知识库文件不能超过 2 MB")
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise HTTPException(status_code=400, detail="文件必须使用 UTF-8 编码") from error
+
+    client = get_weknora_client()
+    knowledge_base_id = agent_config.knowledge_base_id
+    if not knowledge_base_id:
+        if not settings.weknora_embedding_model_id:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "未配置 WEKNORA_EMBEDDING_MODEL_ID，"
+                    "无法自动创建 WeKnora 知识库"
+                ),
+            )
+        try:
+            knowledge_base = client.create_knowledge_base(
+                f"{agent_config.name}知识库",
+                description=f"{agent_config.name}的 WeKnora 知识库",
+                embedding_model_id=settings.weknora_embedding_model_id,
+            )
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        knowledge_base_id = knowledge_base["id"]
+        agent_config = agent_config.model_copy(
+            update={"knowledge_base_id": knowledge_base_id}
+        )
+        try:
+            save_agent_config(agent_config, overwrite=True)
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Agent 配置保存失败") from error
+
+    try:
+        knowledge = client.upload_markdown(knowledge_base_id, filename, content)
+    except WeKnoraError as error:
+        raise weknora_http_exception(error) from error
+
+    return {
+        "success": True,
+        "agent_id": agent_id,
+        "provider": "weknora",
+        "knowledge_base_id": knowledge_base_id,
+        "knowledge_id": knowledge.get("id"),
+        "filename": filename,
+        "parse_status": knowledge.get("parse_status", "pending"),
+    }
+
+
 @app.get("/me")
 def me(user: dict = Depends(get_current_user)):
     return {"user": user}
@@ -581,6 +698,9 @@ def knowledge_status(
         if user.get("role") == "admin"
         else get_manageable_agent_config(agent_id, user)
     )
+    if agent_config.knowledge_provider == "weknora":
+        return weknora_knowledge_status(agent_id, agent_config)
+
     source_dir, _, index_path = get_agent_knowledge_paths(agent_config)
     files = (
         sorted(path.name for path in source_dir.glob("*.md"))
@@ -605,6 +725,9 @@ async def upload_knowledge(
         if user.get("role") == "admin"
         else get_manageable_agent_config(agent_id, user)
     )
+    if agent_config.knowledge_provider == "weknora":
+        return await upload_weknora_knowledge(agent_id, agent_config, file)
+
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     filename = Path(file.filename or "").name
     if not filename or filename != file.filename:
@@ -652,6 +775,16 @@ def rebuild_knowledge(
         if user.get("role") == "admin"
         else get_manageable_agent_config(agent_id, user)
     )
+    if agent_config.knowledge_provider == "weknora":
+        result = weknora_knowledge_status(agent_id, agent_config)
+        result.update(
+            {
+                "success": True,
+                "message": "WeKnora 会在上传文档后自动解析，不需要本地重建索引",
+            }
+        )
+        return result
+
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     try:
         result = build_knowledge_index(source_dir, chunks_path, index_path)
