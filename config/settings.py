@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     weknora_embedding_model_id: str = ""
     knowledge_provider: Literal["local", "weknora"] = "weknora"
     weknora_knowledge_base_id: str = ""
+    redis_url: str = ""
+    redis_timeout_seconds: float = 1.0
     database_path: str = "data/app.db"
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"

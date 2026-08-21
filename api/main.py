@@ -39,7 +39,7 @@ from api.auth import (
     decode_access_token,
     register_user,
 )
-from api.rate_limit import LoginRateLimiter
+from api.rate_limit import create_login_rate_limiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
@@ -56,7 +56,10 @@ from prompts.builder import build_system_prompt
 
 app = FastAPI(title="Ecom Service Agent")
 logger = logging.getLogger(__name__)
-login_rate_limiter = LoginRateLimiter()
+login_rate_limiter = create_login_rate_limiter(
+    settings.redis_url,
+    settings.redis_timeout_seconds,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

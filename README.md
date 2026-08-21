@@ -24,7 +24,8 @@
 | Agent | OpenAI 兼容 SDK、Pydantic | 调用模型和校验结构化回复 |
 | 工具 | Function Calling、MCP 2.0 | 让模型决定是否调用业务工具 |
 | 知识库 | WeKnora | 文档解析、切片、向量化、混合检索和知识库管理 |
-| 数据库 | SQLite | 用户、订单、退款、会话和消息 |
+| 数据库 | SQLite | 用户、订单、退款、会话和消息；本地默认模式 |
+| 缓存/限流 | Redis（可选） | 多进程共享登录失败限流 |
 | 鉴权 | JWT、Argon2 密码哈希 | 登录和接口权限控制 |
 | 前端 | Vue 3、Vite | 用户聊天页面和管理员后台 |
 | 测试 | unittest、FastAPI TestClient、Locust | 接口测试和基础压测 |
@@ -184,9 +185,13 @@ Copy-Item .env.example .env
 | `WEKNORA_EMBEDDING_MODEL_ID` | 自动创建 WeKnora 知识库时使用的向量模型 ID |
 | `KNOWLEDGE_PROVIDER` | 默认知识库服务，推荐 `weknora`，离线时可用 `local` |
 | `WEKNORA_KNOWLEDGE_BASE_ID` | 已有 WeKnora 知识库 ID，留空则首次上传时自动创建 |
+| `REDIS_URL` | 可选 Redis 地址，填写后启用共享登录失败限流 |
+| `REDIS_TIMEOUT_SECONDS` | Redis 连接超时时间 |
 | `CORS_ORIGINS` | 允许访问后端的前端地址，多个地址用英文逗号分隔 |
 
 `.env`、数据库、会话文件和日志不要上传到 GitHub。
+
+当前项目自己的业务数据库仍默认使用 SQLite；Redis 只负责可选的共享限流，WeKnora 使用它自己的 PostgreSQL 和 Redis，不与当前项目直接共用内部表。
 
 ## 8. 本地启动
 
