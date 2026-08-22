@@ -198,6 +198,7 @@ configs/agents/                Agent 配置文件
 frontend/                      Vue 3 前端
 knowledge/                     本地备用知识库样例
 tests/                         接口、工具、数据库和 WeKnora 适配器测试
+load_tests/                    隔离 Compose、Locust 场景和压测报告
 docs/                          API、启动和学习记录
 ```
 
@@ -208,6 +209,7 @@ uv sync
 uv run pytest -q
 uv run python -m compileall -q api agent config tests main.py mcp_client mcp_server
 docker compose config --quiet
+.\load_tests\run.ps1 -Profile quick -SkipChat
 ```
 
 前端检查：
@@ -233,6 +235,7 @@ npm run build
 - [API 接口清单](docs/API接口清单.md)
 - [Swagger 测试记录](docs/swagger.md)
 - [RAG 测试记录](docs/RAG测试记录.md)
+- [自动化全面压测](load_tests/README.md)
 - [学习记录](docs/学习记录.md)
 - [2.0 开发计划](docs/2.0开发计划.md)
 - [2.0 开发记录](docs/2.0开发记录.md)

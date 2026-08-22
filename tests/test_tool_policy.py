@@ -59,6 +59,7 @@ class ToolPolicyTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database.DB_PATH = Path(temp_dir) / "app.db"
             try:
+                database.init_db()
                 repository = Mock()
                 tool_call = SimpleNamespace(
                     id="call-refund-1",

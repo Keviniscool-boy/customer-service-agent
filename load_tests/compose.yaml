@@ -1,0 +1,67 @@
+name: ecom-agent-loadtest
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: loadtest
+      POSTGRES_PASSWORD: loadtest-only
+      POSTGRES_DB: ecom_agent_loadtest
+    volumes:
+      - loadtest-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loadtest -d ecom_agent_loadtest"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_BACKEND: postgres
+      POSTGRES_DSN: postgresql://loadtest:loadtest-only@postgres:5432/ecom_agent_loadtest
+      REDIS_URL: redis://redis:6379/15
+      KNOWLEDGE_PROVIDER: weknora
+      WEKNORA_BASE_URL: http://host.docker.internal:8080
+      MCP_SERVER_URL: http://host.docker.internal:9123/mcp
+      JWT_SECRET: load-test-jwt-secret-not-for-production
+    ports:
+      - "${LOAD_TEST_BACKEND_PORT:-8876}:8765"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - uv
+        - run
+        - --no-sync
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3)
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  loadtest-postgres-data:

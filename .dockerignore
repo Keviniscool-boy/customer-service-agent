@@ -10,4 +10,5 @@ data/*.bak
 sessions
 frontend/node_modules
 frontend/dist
+load_tests/results
 *.log

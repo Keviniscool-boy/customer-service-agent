@@ -6,7 +6,6 @@ from pwdlib import PasswordHash
 from agent.database import (
     create_user,
     get_user_by_username,
-    init_db,
     update_user_password,
 )
 from config.settings import settings
@@ -30,7 +29,6 @@ def register_user(username: str, password: str) -> dict:
     if len(password) > MAX_PASSWORD_LENGTH:
         raise ValueError("密码不能超过 128 个字符")
 
-    init_db()
     if get_user_by_username(username):
         raise ValueError("用户名已存在")
 
@@ -43,7 +41,6 @@ def authenticate_user(username: str, password: str) -> dict | None:
         return None
     if len(password) > MAX_PASSWORD_LENGTH:
         return None
-    init_db()
     user = get_user_by_username(username.strip())
     if not user or not password_hash.verify(password, user["password_hash"]):
         return None
@@ -60,7 +57,6 @@ def reset_user_password(username: str, password: str) -> None:
     if len(password) > MAX_PASSWORD_LENGTH:
         raise ValueError("密码不能超过 128 个字符")
 
-    init_db()
     if not get_user_by_username(username.strip()):
         raise ValueError("用户不存在")
 

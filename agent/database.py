@@ -372,7 +372,6 @@ def get_order(order_id: str) -> dict | None:
 
 
 def get_order_for_user(order_id: str, user_id: str | None = None) -> dict | None:
-    init_db()
     connection = get_connection()
     query = """
         SELECT order_id, product_name, status, amount,
@@ -399,7 +398,6 @@ def create_order(
     shipping_address: str | None = None,
 ) -> str:
     order_id = order_id or f"ORD-{uuid4().hex[:8].upper()}"
-    init_db()
     connection = get_connection()
     connection.execute(
         """
@@ -424,7 +422,6 @@ def create_order(
 
 
 def list_orders_for_user(user_id: str) -> list[dict]:
-    init_db()
     connection = get_connection()
     rows = connection.execute(
         """
@@ -441,7 +438,6 @@ def list_orders_for_user(user_id: str) -> list[dict]:
 
 
 def search_products(keyword: str = "") -> list[dict]:
-    init_db()
     connection = get_connection()
     keyword = keyword.strip().lower()
     rows = connection.execute(
@@ -460,7 +456,6 @@ def search_products(keyword: str = "") -> list[dict]:
 
 
 def find_active_refund(order_id: str, user_id: str | None = None) -> dict | None:
-    init_db()
     connection = get_connection()
     query = """
         SELECT refund_id, order_id, user_id, amount, reason, status,
@@ -485,7 +480,6 @@ def create_refund(
     status: str,
 ) -> dict:
     refund_id = f"REF-{uuid4().hex[:8].upper()}"
-    init_db()
     connection = get_connection()
     connection.execute(
         """
@@ -510,7 +504,6 @@ def create_refund(
 
 
 def list_refunds_for_user(user_id: str) -> list[dict]:
-    init_db()
     connection = get_connection()
     rows = connection.execute(
         """
@@ -531,7 +524,6 @@ def transition_order_status(
     user_id: str,
     new_status: str,
 ) -> dict | None:
-    init_db()
     connection = get_connection()
     row = connection.execute(
         "SELECT status FROM orders WHERE order_id = ? AND user_id = ?",
@@ -775,7 +767,6 @@ def list_tool_audits(limit: int = 100) -> list[dict]:
 
 
 def create_handoff_ticket(reason: str) -> dict:
-    init_db()
     ticket_id = f"HUMAN-{uuid4().hex[:8].upper()}"
     connection = get_connection()
     connection.execute(
