@@ -41,6 +41,13 @@ class BusinessRepository(Protocol):
         new_status: str,
     ) -> dict | None: ...
 
+    def cancel_pending_order_and_create_refund(
+        self,
+        order_id: str,
+        user_id: str,
+        reason: str,
+    ) -> dict | None: ...
+
 
 class DatabaseBusinessRepository:
     """当前项目的默认适配器，底层可使用 SQLite 或 PostgreSQL。"""
@@ -88,6 +95,18 @@ class DatabaseBusinessRepository:
             order_id,
             user_id,
             new_status,
+        )
+
+    def cancel_pending_order_and_create_refund(
+        self,
+        order_id: str,
+        user_id: str,
+        reason: str,
+    ) -> dict | None:
+        return database.cancel_pending_order_and_create_refund(
+            order_id,
+            user_id,
+            reason,
         )
 
 

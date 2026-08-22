@@ -53,6 +53,7 @@ class ChatAPIResponseTest(unittest.TestCase):
                     self.assertEqual(response.text, "你好，我是小极。")
                     self.assertNotIn("intent", response.text)
                     self.assertNotIn("follow_up_question", response.text)
+                    agent_class.return_value.close.assert_called_once_with()
             finally:
                 database.DB_PATH = original_path
 
@@ -102,6 +103,40 @@ class ChatAPIResponseTest(unittest.TestCase):
                     self.assertEqual(response.text, "请提供订单号。\n您想查询哪个订单？")
                     self.assertNotIn("intent", response.text)
                     self.assertNotIn("confidence", response.text)
+            finally:
+                database.DB_PATH = original_path
+
+    def test_chat_closes_agent_when_model_call_raises(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app, raise_server_exceptions=False) as client:
+                    client.post(
+                        "/register",
+                        json={"username": "close-user", "password": "secret123"},
+                    )
+                    login = client.post(
+                        "/login",
+                        json={"username": "close-user", "password": "secret123"},
+                    )
+                    headers = {
+                        "Authorization": f"Bearer {login.json()['access_token']}"
+                    }
+
+                    with patch("api.main.EcomAgent") as agent_class:
+                        agent_class.return_value.chat.side_effect = RuntimeError(
+                            "model unavailable"
+                        )
+                        response = client.post(
+                            "/chat",
+                            json={"message": "你好"},
+                            headers=headers,
+                        )
+
+                self.assertEqual(response.status_code, 500)
+                agent_class.return_value.close.assert_called_once_with()
             finally:
                 database.DB_PATH = original_path
 

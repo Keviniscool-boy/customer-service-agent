@@ -1,5 +1,6 @@
 # 可配置客服 Agent
 
+[![CI](https://github.com/Keviniscool-boy/customer-service-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/Keviniscool-boy/customer-service-agent/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
@@ -115,6 +116,10 @@ WEKNORA_API_KEY=你的WeKnora API Key
 
 DATABASE_BACKEND=postgres
 REDIS_URL=redis://127.0.0.1:6379/0
+
+# 设为 0 可在专门压测时关闭对应限流
+REGISTRATION_RATE_LIMIT=60
+CHAT_RATE_LIMIT=60
 ```
 
 如果管理员第一次上传文件时要让项目自动创建 WeKnora 知识库，再填写：

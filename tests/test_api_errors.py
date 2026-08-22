@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from agent import database
 from api.main import app
+from api.rate_limit import RequestRateLimiter
+from schemas.response import CustomerServiceResponse, IntentType
 
 
 class APIErrorsTest(unittest.TestCase):
@@ -215,6 +217,77 @@ class APIErrorsTest(unittest.TestCase):
                     "TOO_MANY_REQUESTS",
                 )
                 self.assertIn("Retry-After", response.headers)
+            finally:
+                database.DB_PATH = original_path
+
+    def test_repeated_registration_is_rate_limited(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                limiter = RequestRateLimiter(max_requests=1, window_seconds=60)
+                with TestClient(app) as client, patch(
+                    "api.main.registration_rate_limiter",
+                    limiter,
+                ):
+                    first = client.post(
+                        "/register",
+                        json={"username": "register-one", "password": "secret123"},
+                    )
+                    second = client.post(
+                        "/register",
+                        json={"username": "register-two", "password": "secret123"},
+                    )
+
+                self.assertEqual(first.status_code, 200)
+                self.assertEqual(second.status_code, 429)
+                self.assertIn("Retry-After", second.headers)
+            finally:
+                database.DB_PATH = original_path
+
+    def test_repeated_chat_is_rate_limited_before_model_call(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={"username": "chat-limit-user", "password": "secret123"},
+                    )
+                    login = client.post(
+                        "/login",
+                        json={"username": "chat-limit-user", "password": "secret123"},
+                    )
+                    headers = {
+                        "Authorization": f"Bearer {login.json()['access_token']}"
+                    }
+                    result = CustomerServiceResponse(
+                        intent=IntentType.GREETING,
+                        confidence=0.9,
+                        reply="你好",
+                    )
+                    limiter = RequestRateLimiter(max_requests=1, window_seconds=60)
+                    with patch("api.main.chat_rate_limiter", limiter), patch(
+                        "api.main.EcomAgent"
+                    ) as agent_class:
+                        agent_class.return_value.chat.return_value = result
+                        first = client.post(
+                            "/chat",
+                            json={"message": "你好"},
+                            headers=headers,
+                        )
+                        second = client.post(
+                            "/chat",
+                            json={"message": "再问一次"},
+                            headers=headers,
+                        )
+
+                self.assertEqual(first.status_code, 200)
+                self.assertEqual(second.status_code, 429)
+                agent_class.return_value.chat.assert_called_once()
             finally:
                 database.DB_PATH = original_path
 

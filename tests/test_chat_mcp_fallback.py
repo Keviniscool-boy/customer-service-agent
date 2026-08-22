@@ -47,6 +47,48 @@ class ChatMCPFallbackTest(unittest.TestCase):
         self.assertEqual(agent.temperature, 0.2)
         self.assertEqual(tool_names, {"search_knowledge"})
 
+    def test_close_releases_model_and_mcp_clients(self):
+        with patch("agent.chat.MCPClient.connect", return_value=[]):
+            agent = EcomAgent()
+
+        with patch.object(agent.client, "close") as model_close, patch.object(
+            agent.mcp_client,
+            "close",
+        ) as mcp_close:
+            agent.close()
+
+        model_close.assert_called_once_with()
+        mcp_close.assert_called_once_with()
+
+    def test_initialization_failure_releases_created_clients(self):
+        config = AgentConfig(
+            agent_id="init-failure-test",
+            name="测试助手",
+            role="通用助手",
+            welcome_message="你好",
+            tone="简洁",
+            service_scope=["咨询"],
+            knowledge_base_path="knowledge",
+            knowledge_provider="local",
+            enabled_tools=[],
+        )
+        with patch("agent.chat.OpenAI") as openai_class, patch(
+            "agent.chat.MCPClient"
+        ) as mcp_class, patch(
+            "agent.chat.get_latest_session_id",
+            return_value="session-1",
+        ), patch(
+            "agent.chat.load_messages",
+            side_effect=OSError("database unavailable"),
+        ):
+            mcp_class.return_value.connect.return_value = []
+
+            with self.assertRaises(OSError):
+                EcomAgent(user_id="user-1", agent_config=config)
+
+        openai_class.return_value.close.assert_called_once_with()
+        mcp_class.return_value.close.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

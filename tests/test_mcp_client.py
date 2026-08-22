@@ -1,6 +1,6 @@
 import json
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from mcp.types import CallToolResult, TextContent
 
@@ -61,6 +61,21 @@ class MCPClientTest(unittest.TestCase):
         )
 
         self.assertEqual(output, '{"success": true}')
+
+    def test_close_cancels_connection_task_when_thread_does_not_stop(self):
+        client = MCPClient("http://test/mcp")
+        client.loop = Mock()
+        client.loop.is_closed.return_value = False
+        client.close_event = Mock()
+        client.thread = Mock()
+        client.thread.is_alive.side_effect = [True, False]
+        loop = client.loop
+        thread = client.thread
+
+        client.close()
+
+        loop.call_soon_threadsafe.assert_any_call(loop.stop)
+        self.assertEqual(thread.join.call_count, 2)
 
 
 if __name__ == "__main__":

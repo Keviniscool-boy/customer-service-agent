@@ -12,22 +12,25 @@ def main():
         return
     agent = EcomAgent(user_id=user["id"])
 
-    while True:
-        user_input = input("👤 你: ").strip()
-        if not user_input:
-            continue
-        if user_input.lower() in ("quit", "exit"):
-            print("再见！")
-            break
-        if user_input.lower() == "reset":
-            agent.reset()
-            print("当前会话已重置")
-            continue
-        try:
-            response = agent.chat(user_input)
-            print(f"\n🤖 小极: {visible_reply(response.reply)}\n")
-        except Exception as error:
-            print(f"出错了: {error}")
+    try:
+        while True:
+            user_input = input("👤 你: ").strip()
+            if not user_input:
+                continue
+            if user_input.lower() in ("quit", "exit"):
+                print("再见！")
+                break
+            if user_input.lower() == "reset":
+                agent.reset()
+                print("当前会话已重置")
+                continue
+            try:
+                response = agent.chat(user_input)
+                print(f"\n🤖 小极: {visible_reply(response.reply)}\n")
+            except Exception as error:
+                print(f"出错了: {error}")
+    finally:
+        agent.close()
 
 
 if __name__ == "__main__":

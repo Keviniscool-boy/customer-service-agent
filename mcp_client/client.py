@@ -19,23 +19,35 @@ class MCPClient:
         self.session = None
         self.close_event = None
         self.connected = threading.Event()
+        self.tool_definitions = []
+        self.connection_task = None
 
     def connect(self) -> list[dict]:
         """连接 MCP Server，并返回模型需要的工具定义。"""
+        if self.thread and self.thread.is_alive() and self.session:
+            return self.tool_definitions
+
+        self.connected.clear()
         self.loop = asyncio.new_event_loop()
         errors = []
+        loop = self.loop
 
         def run_loop():
-            asyncio.set_event_loop(self.loop)
-            self.loop.run_until_complete(self._keep_connection(errors))
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(self._keep_connection(errors))
+            finally:
+                loop.close()
 
         self.thread = threading.Thread(target=run_loop, daemon=True)
         self.thread.start()
         self.connected.wait(timeout=30)
 
         if errors:
+            self.close()
             raise errors[0]
         if not self.connected.is_set():
+            self.close()
             raise TimeoutError("连接 MCP Server 超时")
 
         return self.tool_definitions
@@ -60,6 +72,8 @@ class MCPClient:
         except Exception as error:
             errors.append(error)
             self.connected.set()
+        finally:
+            self.session = None
 
     def call_tool(self, name: str, arguments: dict) -> str:
         """调用 MCP 工具，返回 JSON 字符串。"""
@@ -85,7 +99,18 @@ class MCPClient:
         return result.content[0].text if result.content else "{}"
 
     def close(self):
-        if self.close_event and self.loop:
-            self.loop.call_soon_threadsafe(self.close_event.set)
-        if self.thread:
-            self.thread.join(timeout=5)
+        loop = self.loop
+        thread = self.thread
+        if self.close_event and loop and not loop.is_closed():
+            loop.call_soon_threadsafe(self.close_event.set)
+        if thread and thread is not threading.current_thread():
+            thread.join(timeout=5)
+            if thread.is_alive() and loop and not loop.is_closed():
+                loop.call_soon_threadsafe(loop.stop)
+                thread.join(timeout=5)
+        if not thread or not thread.is_alive():
+            self.session = None
+            self.close_event = None
+            self.thread = None
+            self.loop = None
+            self.connected.clear()

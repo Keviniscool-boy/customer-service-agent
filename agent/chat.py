@@ -29,6 +29,20 @@ from schemas.response import CustomerServiceResponse, IntentType
 logger = logging.getLogger(__name__)
 
 
+def tool_result_succeeded(result) -> bool:
+    """判断本地字典或 MCP JSON 字符串是否表示执行成功。"""
+
+    payload = result
+    if isinstance(result, str):
+        try:
+            payload = json.loads(result)
+        except json.JSONDecodeError:
+            return True
+    if isinstance(payload, dict):
+        return payload.get("success", True) is not False
+    return True
+
+
 class EcomAgent:
     def __init__(
         self,
@@ -76,53 +90,57 @@ class EcomAgent:
 
         self.mcp_client = MCPClient(settings.mcp_server_url)
         try:
-            mcp_tools = self.mcp_client.connect()
-            self.mcp_available = True
-        except Exception as error:
-            mcp_tools = []
-            self.mcp_available = False
-            logger.warning(
-                "MCP 连接失败，已切换本地工具：%s",
-                type(error).__name__,
-            )
+            try:
+                mcp_tools = self.mcp_client.connect()
+                self.mcp_available = True
+            except Exception as error:
+                mcp_tools = []
+                self.mcp_available = False
+                logger.warning(
+                    "MCP 连接失败，已切换本地工具：%s",
+                    type(error).__name__,
+                )
 
-        enabled_tools = set(self.agent_config.enabled_tools)
-        mcp_tools = [
+            enabled_tools = set(self.agent_config.enabled_tools)
+            mcp_tools = [
             tool
             for tool in mcp_tools
             if tool["function"]["name"] in enabled_tools
         ]
-        local_tools = self.tool_registry.get_definitions(enabled_tools)
-        self.mcp_tool_names = {
+            local_tools = self.tool_registry.get_definitions(enabled_tools)
+            self.mcp_tool_names = {
             tool["function"]["name"] for tool in mcp_tools
         }
-        self.tool_definitions = [
+            self.tool_definitions = [
             tool
             for tool in local_tools
             if tool["function"]["name"] not in self.mcp_tool_names
         ] + mcp_tools
-        self.system_prompt = build_system_prompt(
+            self.system_prompt = build_system_prompt(
             self.agent_config,
             self.tool_definitions,
         )
 
-        self.messages: list[dict] = [
+            self.messages: list[dict] = [
             {"role": "system", "content": self.system_prompt}
         ]
 
-        saved_messages = load_messages(self.session_id)
-        saved_summary = load_summary(self.session_id)
-        if saved_summary:
-            self.messages.append(
+            saved_messages = load_messages(self.session_id)
+            saved_summary = load_summary(self.session_id)
+            if saved_summary:
+                self.messages.append(
                 {"role": "system", "content": f"历史摘要：{saved_summary}"}
             )
-            self.summary = saved_summary
-        if saved_messages:
-            self.messages.extend(
+                self.summary = saved_summary
+            if saved_messages:
+                self.messages.extend(
                 message
                 for message in saved_messages
                 if message.get("role") != "system"
-            )
+                )
+        except Exception:
+            self.close()
+            raise
 
     def chat(self, user_input: str) -> CustomerServiceResponse:
         message_count_before_chat = len(self.messages)
@@ -193,7 +211,11 @@ class EcomAgent:
                             tool_name,
                             {**tool_arguments, "user_id": self.user_id},
                         )
-                        audit_status = "success"
+                        audit_status = (
+                            "success"
+                            if tool_result_succeeded(tool_result)
+                            else "failed"
+                        )
                     else:
                         tool_result = self.tool_registry.execute(
                             tool_name,
@@ -335,6 +357,14 @@ class EcomAgent:
         ]
         replace_messages(self.session_id, [])
         update_summary(self.session_id, None)
+
+    def close(self):
+        """释放当前 Agent 持有的外部连接。"""
+
+        try:
+            self.client.close()
+        finally:
+            self.mcp_client.close()
 
     def _save_to_database(self):
         conversation_messages = [

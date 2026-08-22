@@ -41,7 +41,7 @@ from api.auth import (
     decode_access_token,
     register_user,
 )
-from api.rate_limit import create_login_rate_limiter
+from api.rate_limit import create_login_rate_limiter, create_request_rate_limiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
@@ -81,6 +81,20 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Ecom Service Agent", lifespan=lifespan)
 login_rate_limiter = create_login_rate_limiter(
     settings.redis_url,
+    settings.redis_timeout_seconds,
+)
+registration_rate_limiter = create_request_rate_limiter(
+    settings.redis_url,
+    "registration",
+    settings.registration_rate_limit,
+    settings.registration_rate_window_seconds,
+    settings.redis_timeout_seconds,
+)
+chat_rate_limiter = create_request_rate_limiter(
+    settings.redis_url,
+    "chat",
+    settings.chat_rate_limit,
+    settings.chat_rate_window_seconds,
     settings.redis_timeout_seconds,
 )
 app.add_middleware(
@@ -264,7 +278,15 @@ def list_products(keyword: str = ""):
 
 
 @app.post("/register")
-def register(credentials: Credentials):
+def register(credentials: Credentials, request: Request):
+    client_host = request.client.host if request.client else "unknown"
+    allowed, retry_after = registration_rate_limiter.consume(client_host)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="注册请求过于频繁，请稍后再试",
+            headers={"Retry-After": str(retry_after)},
+        )
     try:
         user = register_user(credentials.username, credentials.password)
     except ValueError as error:
@@ -1244,6 +1266,14 @@ def remove_session(session_id: str, user: dict = Depends(get_current_user)):
 
 @app.post("/chat")
 def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
+    allowed, retry_after = chat_rate_limiter.consume(user["id"])
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="聊天请求过于频繁，请稍后再试",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     agent_config = get_user_agent_config(request.agent_id, user)
     try:
         agent = EcomAgent(
@@ -1257,5 +1287,14 @@ def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
             status_code=503,
             detail="Agent 暂时不可用，请检查知识库索引和配置",
         ) from error
-    response = agent.chat(request.message)
-    return PlainTextResponse(content=visible_reply(response.reply))
+    try:
+        response = agent.chat(request.message)
+        return PlainTextResponse(content=visible_reply(response.reply))
+    finally:
+        try:
+            agent.close()
+        except Exception as error:
+            logger.warning(
+                "Agent 资源释放失败：%s",
+                type(error).__name__,
+            )

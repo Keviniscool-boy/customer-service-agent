@@ -140,6 +140,101 @@ class ToolPolicyTest(unittest.TestCase):
             finally:
                 database.DB_PATH = original_path
 
+    def test_failed_mcp_result_is_recorded_as_failed(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                database.init_db()
+                tool_call = SimpleNamespace(
+                    id="call-order-1",
+                    function=SimpleNamespace(
+                        name="query_order",
+                        arguments='{"order_id":"ORD-999"}',
+                    ),
+                )
+                tool_response = SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(
+                                content=None,
+                                tool_calls=[tool_call],
+                            )
+                        )
+                    ]
+                )
+                final_response = SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(
+                                content="没有找到订单。",
+                                tool_calls=None,
+                            )
+                        )
+                    ]
+                )
+                parsed_response = SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=SimpleNamespace(
+                                parsed=CustomerServiceResponse(
+                                    intent=IntentType.ORDER_QUERY,
+                                    confidence=0.9,
+                                    reply="没有找到订单。",
+                                )
+                            )
+                        )
+                    ]
+                )
+                mcp_tool = {
+                    "type": "function",
+                    "function": {
+                        "name": "query_order",
+                        "description": "查询订单",
+                        "parameters": {"type": "object"},
+                    },
+                }
+                config = AgentConfig(
+                    agent_id="mcp-audit-test",
+                    name="测试助手",
+                    role="订单助手",
+                    welcome_message="你好",
+                    tone="简洁",
+                    service_scope=["订单"],
+                    knowledge_base_path="knowledge",
+                    knowledge_provider="local",
+                    enabled_tools=["query_order"],
+                )
+
+                with patch(
+                    "agent.chat.MCPClient.connect",
+                    return_value=[mcp_tool],
+                ):
+                    agent = EcomAgent(
+                        user_id="user-1",
+                        agent_config=config,
+                    )
+                with patch.object(
+                    agent.client.chat.completions,
+                    "create",
+                    side_effect=[tool_response, final_response],
+                ), patch.object(
+                    agent.client.beta.chat.completions,
+                    "parse",
+                    return_value=parsed_response,
+                ), patch.object(
+                    agent.mcp_client,
+                    "call_tool",
+                    return_value='{"success": false, "error": "订单不存在"}',
+                ):
+                    agent.chat("查询订单 ORD-999")
+
+                audits = database.list_tool_audits()
+                self.assertEqual(audits[0]["status"], "failed")
+            finally:
+                database.DB_PATH = original_path
+
 
 if __name__ == "__main__":
     unittest.main()

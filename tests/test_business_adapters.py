@@ -74,7 +74,7 @@ class BusinessAdaptersTest(unittest.TestCase):
             "amount": 88.0,
         }
         repository.find_active_refund.return_value = None
-        repository.create_refund.return_value = {
+        repository.cancel_pending_order_and_create_refund.return_value = {
             "refund_id": "REF-001",
             "status": "approved",
         }
@@ -88,18 +88,31 @@ class BusinessAdaptersTest(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["action"], "auto_refund")
-        repository.transition_order_status.assert_called_once_with(
+        repository.cancel_pending_order_and_create_refund.assert_called_once_with(
             "REAL-001",
             "user-1",
-            "已取消",
-        )
-        repository.create_refund.assert_called_once_with(
-            "REAL-001",
-            "user-1",
-            88.0,
             "不需要了",
-            "approved",
         )
+
+    def test_refund_stops_when_order_cannot_be_cancelled(self):
+        repository = Mock()
+        repository.get_order_for_user.return_value = {
+            "order_id": "SHARED-001",
+            "status": "待发货",
+            "amount": 88.0,
+        }
+        repository.find_active_refund.return_value = None
+        repository.cancel_pending_order_and_create_refund.return_value = None
+
+        result = apply_refund(
+            "SHARED-001",
+            "不需要了",
+            user_id="user-1",
+            repository=repository,
+        )
+
+        self.assertFalse(result["success"])
+        repository.create_refund.assert_not_called()
 
     def test_registry_passes_business_repository_to_tools(self):
         repository = Mock()

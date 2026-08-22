@@ -1,6 +1,7 @@
 from typing import Literal
 
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -25,9 +26,17 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://127.0.0.1:5173,"
         "http://localhost:8088,http://127.0.0.1:8088"
     )
-
-    model_config = {"env_file": ".env"}
     embedding_model: str = "text-embedding-3-small"
+    registration_rate_limit: int = Field(default=60, ge=0)
+    registration_rate_window_seconds: int = Field(default=60, ge=1)
+    chat_rate_limit: int = Field(default=60, ge=0)
+    chat_rate_window_seconds: int = Field(default=60, ge=1)
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 settings = Settings()

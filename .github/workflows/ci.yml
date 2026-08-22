@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: test-key
+      JWT_SECRET: ci-only-secret-for-automated-tests
+      KNOWLEDGE_PROVIDER: local
+      DATABASE_BACKEND: sqlite
+      REDIS_URL: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - name: 安装依赖
+        run: uv sync --locked
+      - name: 后端测试
+        run: uv run pytest -q
+      - name: Python 编译检查
+        run: >-
+          uv run python -m compileall -q
+          api agent config tests main.py mcp_client mcp_server
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 安装依赖
+        run: npm ci
+      - name: 前端生产构建
+        run: npm run build
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 准备示例配置
+        run: cp .env.example .env
+      - name: 校验 Compose 配置
+        run: docker compose config --quiet

@@ -40,17 +40,24 @@ class OrdersTest(unittest.TestCase):
             finally:
                 database.DB_PATH = original_path
 
-    def test_refund_reads_the_same_sqlite_order(self):
+    def test_shared_demo_order_cannot_be_refunded_by_a_user(self):
         original_path = database.DB_PATH
 
         with tempfile.TemporaryDirectory() as temp_dir:
             database.DB_PATH = Path(temp_dir) / "app.db"
             try:
                 database.init_db()
-                result = apply_refund("ORD-002", "暂时不需要")
+                result = apply_refund(
+                    "ORD-002",
+                    "暂时不需要",
+                    user_id="user-1",
+                )
 
-                self.assertTrue(result["success"])
-                self.assertEqual(result["action"], "auto_refund")
+                self.assertFalse(result["success"])
+                self.assertEqual(database.get_order("ORD-002")["status"], "待发货")
+                self.assertIsNone(
+                    database.find_active_refund("ORD-002", "user-1")
+                )
             finally:
                 database.DB_PATH = original_path
 

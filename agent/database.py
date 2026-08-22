@@ -503,6 +503,63 @@ def create_refund(
     return dict(row)
 
 
+def cancel_pending_order_and_create_refund(
+    order_id: str,
+    user_id: str,
+    reason: str,
+) -> dict | None:
+    """在一个事务中取消待发货订单并创建已批准退款。"""
+
+    refund_id = f"REF-{uuid4().hex[:8].upper()}"
+    connection = get_connection()
+    try:
+        row = connection.execute(
+            """
+            SELECT amount
+            FROM orders
+            WHERE order_id = ? AND user_id = ? AND status = '待发货'
+            """,
+            (order_id, user_id),
+        ).fetchone()
+        if row is None:
+            connection.close()
+            return None
+
+        connection.execute(
+            """
+            UPDATE orders
+            SET status = '已取消'
+            WHERE order_id = ? AND user_id = ? AND status = '待发货'
+            """,
+            (order_id, user_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO refunds (
+                refund_id, order_id, user_id, amount, reason, status
+            ) VALUES (?, ?, ?, ?, ?, 'approved')
+            """,
+            (refund_id, order_id, user_id, row["amount"], reason),
+        )
+        connection.commit()
+        result = connection.execute(
+            """
+            SELECT refund_id, order_id, user_id, amount, reason, status,
+                   created_at, updated_at
+            FROM refunds
+            WHERE refund_id = ?
+            """,
+            (refund_id,),
+        ).fetchone()
+        return dict(result)
+    except Exception:
+        try:
+            connection._connection.rollback()
+        finally:
+            connection.close()
+        raise
+
+
 def list_refunds_for_user(user_id: str) -> list[dict]:
     connection = get_connection()
     rows = connection.execute(
