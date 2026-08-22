@@ -1,4 +1,31 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ecom_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-ecom_agent}
+    volumes:
+      - app-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecom_agent} -d ${POSTGRES_DB:-ecom_agent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - app-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -6,19 +33,29 @@ services:
     env_file:
       - .env
     environment:
-      # 容器中的 127.0.0.1 是 backend 容器自己，外部服务要走宿主机地址。
+      # V2 主路径：PostgreSQL + Redis + WeKnora。
+      DATABASE_BACKEND: postgres
+      POSTGRES_DSN: postgresql://${POSTGRES_USER:-ecom_agent}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-ecom_agent}
+      REDIS_URL: redis://redis:6379/0
+      KNOWLEDGE_PROVIDER: weknora
+      # 无论 CORS_ORIGINS 是否沿用旧配置，都允许当前 Compose 前端端口访问后端。
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173},http://localhost:${FRONTEND_PORT:-8088},http://127.0.0.1:${FRONTEND_PORT:-8088}"
+      # 容器中的 127.0.0.1 是 backend 容器自己，WeKnora 要走宿主机地址。
       WEKNORA_BASE_URL: ${WEKNORA_COMPOSE_BASE_URL:-http://host.docker.internal:8080}
       MCP_SERVER_URL: ${MCP_COMPOSE_SERVER_URL:-http://host.docker.internal:9123/mcp}
-      KNOWLEDGE_PROVIDER: ${KNOWLEDGE_PROVIDER:-local}
     ports:
       - "8765:8765"
     volumes:
       - ./data:/app/data
-      - ./sessions:/app/sessions
       - ./configs:/app/configs
       - ./knowledge:/app/knowledge
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -43,8 +80,12 @@ services:
       args:
         VITE_API_BASE_URL: ${FRONTEND_API_BASE_URL:-http://localhost:8765}
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8088}:80"
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  app-postgres-data:
+  app-redis-data:

@@ -2,6 +2,8 @@
 
 地址：`http://127.0.0.1:8765`
 
+V2 默认依赖 WeKnora、PostgreSQL 和 Redis。WeKnora 的知识库 API 由本项目服务端调用，普通用户不直接接触 WeKnora API Key。
+
 需要登录的接口都加请求头：
 
 ```text
@@ -113,7 +115,19 @@ DELETE /admin/agents/{agent_id}/knowledge/{filename}
 
 配置版本接口只返回版本号和时间，不直接返回完整 Prompt。恢复版本会生成新的当前版本，不会覆盖历史快照。Agent 配置和知识库均由管理员维护，普通用户只能使用公开 Agent。
 
-上传知识库使用 `multipart/form-data`，字段名是 `file`，目前只支持 UTF-8 编码的 `.md` 文件，单个文件最大 2 MB。
+上传知识库使用 `multipart/form-data`，字段名是 `file`，目前只支持 UTF-8 编码的 `.md` 文件，单个文件最大 2 MB。WeKnora 模式下上传会提交异步解析任务，实际切片、Embedding 和混合检索由 WeKnora 完成。
+
+健康检查会返回当前数据库、Redis 和知识库提供方：
+
+```json
+{
+  "status": "ok",
+  "database_backend": "postgres",
+  "redis_backend": "ok",
+  "knowledge_provider": "weknora",
+  "weknora_configured": "true"
+}
+```
 
 `/admin/tool-audits` 返回最近的工具调用记录，包括用户、Agent、工具名、参数、结果和状态。
 退款在聊天中如果没有用户明确确认，会记录为 `awaiting_confirmation`，不会真正创建退款。

@@ -60,6 +60,13 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    if settings.database_backend == "postgres" and not settings.postgres_dsn.strip():
+        raise RuntimeError("PostgreSQL 主路径需要配置 POSTGRES_DSN")
+    if settings.knowledge_provider == "weknora":
+        if not settings.weknora_base_url.strip():
+            raise RuntimeError("WeKnora 主路径需要配置 WEKNORA_BASE_URL")
+        if not settings.weknora_api_key.strip():
+            raise RuntimeError("WeKnora 主路径需要配置 WEKNORA_API_KEY")
     try:
         init_db()
     except Exception as error:
@@ -186,7 +193,7 @@ class UserAgentConfigRequest(BaseModel):
     behavior_rules: list[str] = Field(default_factory=list, max_length=20)
     forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
     enabled_tools: list[str] = Field(default_factory=list)
-    knowledge_provider: Literal["local", "weknora"] = "local"
+    knowledge_provider: Literal["local", "weknora"] = "weknora"
     knowledge_base_id: str | None = Field(default=None, max_length=100)
     model_name: str | None = None
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
@@ -218,9 +225,33 @@ def health() -> dict[str, str]:
     finally:
         if connection is not None:
             connection.close()
+    redis_status = "disabled"
+    if settings.redis_url.strip():
+        try:
+            from redis import Redis
+
+            redis_client = Redis.from_url(
+                settings.redis_url,
+                socket_connect_timeout=settings.redis_timeout_seconds,
+                socket_timeout=settings.redis_timeout_seconds,
+            )
+            redis_client.ping()
+            redis_status = "ok"
+        except Exception as error:
+            logger.exception("Redis 健康检查失败")
+            raise HTTPException(
+                status_code=503,
+                detail="Redis 暂时不可用，请检查 Redis 配置和服务状态",
+            ) from error
+
     return {
         "status": "ok",
         "database_backend": settings.database_backend,
+        "redis_backend": redis_status,
+        "knowledge_provider": settings.knowledge_provider,
+        "weknora_configured": str(
+            bool(settings.weknora_base_url.strip() and settings.weknora_api_key.strip())
+        ).lower(),
     }
 
 

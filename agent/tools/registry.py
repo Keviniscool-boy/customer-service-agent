@@ -16,6 +16,7 @@ from agent.business.repository import BusinessRepository
 from agent.integrations.logistics import LogisticsProvider
 from functools import partial
 from agent.tools.policy import requires_confirmation
+from config.settings import settings
 
 
 ToolFunction = Callable[..., object]
@@ -211,7 +212,7 @@ def _resolve_knowledge_index_path(knowledge_base_path: str | None):
 
 def get_default_registry(
     knowledge_base_path: str | None = None,
-    knowledge_provider: str = "local",
+    knowledge_provider: str | None = None,
     knowledge_base_id: str | None = None,
     business_repository: BusinessRepository | None = None,
     logistics_provider: LogisticsProvider | None = None,
@@ -219,6 +220,7 @@ def get_default_registry(
     """创建一份默认工具注册表，避免不同 Agent 互相修改配置。"""
 
     registry = ToolRegistry()
+    knowledge_provider = knowledge_provider or settings.knowledge_provider
     if knowledge_provider == "weknora":
         knowledge_tool = make_weknora_search_knowledge(knowledge_base_id or "")
     else:

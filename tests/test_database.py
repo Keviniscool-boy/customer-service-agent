@@ -1,11 +1,28 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from agent import database
 
 
 class DatabaseTest(unittest.TestCase):
+    def test_postgres_executemany_uses_cursor(self):
+        raw_connection = MagicMock()
+        cursor = raw_connection.cursor.return_value.__enter__.return_value
+        connection = database.DatabaseConnection(raw_connection, "postgres")
+        rows = [("one", 1), ("two", 2)]
+
+        connection.executemany(
+            "INSERT INTO examples (name, value) VALUES (?, ?)",
+            rows,
+        )
+
+        cursor.executemany.assert_called_once_with(
+            "INSERT INTO examples (name, value) VALUES (%s, %s)",
+            rows,
+        )
+
     def test_connection_enables_sqlite_reliability_options(self):
         original_path = database.DB_PATH
 

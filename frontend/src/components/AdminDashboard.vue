@@ -46,7 +46,7 @@ function emptyAgentForm() {
     role: '',
     welcome_message: '',
     tone: '友好、清晰、简洁',
-    knowledge_provider: 'local',
+    knowledge_provider: 'weknora',
     knowledge_base_id: '',
     knowledge_base_path: '',
     model_name: '',
@@ -398,7 +398,7 @@ onMounted(refresh)
         <div class="section-heading">
           <div>
             <h2>Agent 知识库</h2>
-            <p class="section-hint">管理员配置客服身份、提示词和知识库，顾客只负责提问。</p>
+            <p class="section-hint">管理员配置客服身份和 WeKnora 知识库，顾客只负责提问。</p>
           </div>
           <button class="refresh-button" type="button" @click="beginCreateAgent">新建 Agent</button>
           <select v-model="selectedAgentId" class="admin-select" @change="loadKnowledgeStatus">
@@ -413,11 +413,12 @@ onMounted(refresh)
           <label>语气<input v-model="createForm.tone" /></label>
           <label>知识库服务
             <select v-model="createForm.knowledge_provider">
-              <option value="local">本地 RAG</option>
-              <option value="weknora">WeKnora</option>
+              <option value="weknora">WeKnora（默认）</option>
+              <option value="local">本地 RAG（备用）</option>
             </select>
           </label>
-          <label>知识库目录<input v-model="createForm.knowledge_base_path" placeholder="留空自动生成" /></label>
+          <label>WeKnora 知识库 ID<input v-model="createForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
+          <label v-if="createForm.knowledge_provider === 'local'">本地备用知识库目录<input v-model="createForm.knowledge_base_path" placeholder="留空自动生成" /></label>
           <label>模型名称<input v-model="createForm.model_name" placeholder="留空使用全局模型" /></label>
           <label>温度<input v-model="createForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
           <label class="wide-field">服务范围<textarea v-model="createForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
@@ -442,7 +443,7 @@ onMounted(refresh)
             </select>
           </label>
           <label>WeKnora 知识库 ID<input v-model="agentForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
-          <label>知识库目录<input v-model="agentForm.knowledge_base_path" /></label>
+          <label v-if="agentForm.knowledge_provider === 'local'">本地备用知识库目录<input v-model="agentForm.knowledge_base_path" /></label>
           <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
           <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
           <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>

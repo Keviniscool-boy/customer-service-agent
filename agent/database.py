@@ -32,6 +32,8 @@ class DatabaseConnection:
     def executemany(self, query: str, params):
         if self.backend == "postgres":
             query = query.replace("?", "%s")
+            with self._connection.cursor() as cursor:
+                return cursor.executemany(query, params)
         return self._connection.executemany(query, params)
 
     def commit(self):
@@ -89,16 +91,21 @@ def _table_columns(connection: DatabaseConnection, table_name: str) -> set[str]:
 
 def init_db():
     connection = get_connection()
+    timestamp_column = (
+        "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        if DATABASE_BACKEND == "postgres"
+        else "TEXT DEFAULT CURRENT_TIMESTAMP"
+    )
     connection.execute(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             agent_id TEXT NOT NULL DEFAULT 'ecom-default',
             title TEXT,
             summary TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {timestamp_column},
+            updated_at {timestamp_column}
         )
             """
         )
@@ -115,19 +122,19 @@ def init_db():
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             message_json TEXT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            created_at {timestamp_column},
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
         """
     )
     connection.execute(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'user',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {timestamp_column}
         )
         """
     )
@@ -150,7 +157,7 @@ def init_db():
         """
     )
     connection.execute(
-        """
+        f"""
         CREATE TABLE IF NOT EXISTS refunds (
             refund_id TEXT PRIMARY KEY,
             order_id TEXT NOT NULL,
@@ -158,8 +165,8 @@ def init_db():
             amount REAL NOT NULL,
             reason TEXT NOT NULL,
             status TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {timestamp_column},
+            updated_at {timestamp_column}
         )
         """
     )
@@ -191,7 +198,17 @@ def init_db():
             arguments_json TEXT NOT NULL,
             result_json TEXT NOT NULL,
             status TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at {timestamp_column}
+        )
+        """
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS handoff_tickets (
+            ticket_id TEXT PRIMARY KEY,
+            status TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at {timestamp_column}
         )
         """
     )
@@ -755,6 +772,30 @@ def list_tool_audits(limit: int = 100) -> list[dict]:
     ).fetchall()
     connection.close()
     return [dict(row) for row in rows]
+
+
+def create_handoff_ticket(reason: str) -> dict:
+    init_db()
+    ticket_id = f"HUMAN-{uuid4().hex[:8].upper()}"
+    connection = get_connection()
+    connection.execute(
+        """
+        INSERT INTO handoff_tickets (ticket_id, status, reason)
+        VALUES (?, ?, ?)
+        """,
+        (ticket_id, "pending_human", reason),
+    )
+    connection.commit()
+    row = connection.execute(
+        """
+        SELECT ticket_id, status, reason, created_at
+        FROM handoff_tickets
+        WHERE ticket_id = ?
+        """,
+        (ticket_id,),
+    ).fetchone()
+    connection.close()
+    return dict(row)
 
 
 def delete_session(session_id: str) -> None:

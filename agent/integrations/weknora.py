@@ -26,11 +26,11 @@ class WeKnoraClient:
         if not knowledge_base_id:
             raise WeKnoraError("没有配置 WeKnora knowledge_base_id")
         payload = self._request(
-            "/api/v1/knowledge-search",
+            f"/api/v1/knowledge-bases/{knowledge_base_id}/hybrid-search",
             {
-                "query": query,
-                "knowledge_base_id": knowledge_base_id,
-                "top_k": max(1, min(top_k, 5)),
+                "query_text": query,
+                "match_count": max(1, min(top_k, 10)),
+                "vector_threshold": 0.30,
             },
         )
         results = payload.get("data", payload) if isinstance(payload, dict) else payload

@@ -3,12 +3,24 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from agent.database import create_handoff_ticket
+
 
 def create_handoff(
     reason: str,
-    ticket_path: str | Path = "sessions/handoff_tickets.json",
+    ticket_path: str | Path | None = None,
 ) -> dict:
-    """创建一个学习版人工客服工单。"""
+    """默认把人工工单保存到应用数据库；传路径时兼容早期文件测试。"""
+    if ticket_path is None:
+        try:
+            return {"success": True, **create_handoff_ticket(reason)}
+        except Exception as error:
+            return {
+                "success": False,
+                "message": "人工工单创建失败",
+                "error": type(error).__name__,
+            }
+
     path = Path(ticket_path)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)

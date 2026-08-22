@@ -6,7 +6,7 @@ from agent.rag.retriever import Retriever
 from config.settings import settings
 
 
-_retriever = Retriever()
+_retriever: Retriever | None = None
 # 当前 embedding 模型下，低于这个分数的结果容易只是“沾边”。
 MIN_RELEVANCE_SCORE = 0.50
 
@@ -63,6 +63,9 @@ def _search_with_retriever(
 def search_knowledge(query: str, top_k: int = 2) -> str:
     """兼容 1.0，搜索默认电商知识库。"""
 
+    global _retriever
+    if _retriever is None:
+        _retriever = Retriever()
     return _search_with_retriever(_retriever, query, top_k)
 
 

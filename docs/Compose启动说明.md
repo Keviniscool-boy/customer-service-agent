@@ -1,85 +1,163 @@
 # Docker Compose 启动说明
 
-这份 Compose 只启动当前项目的后端和前端。
+本项目和 WeKnora 是两个独立项目。
 
-WeKnora 是独立开源项目，继续使用 WeKnora 自己的 Compose，不把它的 PostgreSQL、Redis 和内部服务复制到当前项目。
+- WeKnora：使用 Tencent/WeKnora 官方 Compose，负责知识库。
+- 本项目 Compose：负责 PostgreSQL、Redis、Agent 后端和 Vue 前端。
 
-## 第一次启动
+不要把两个项目的 Compose 文件合并，也不要让本项目直接修改 WeKnora 的内部数据库。
 
-在项目根目录执行：
+## 一、启动 WeKnora
 
-```powershell
+官方项目地址：
+
+<https://github.com/Tencent/WeKnora>
+
+~~~powershell
+git clone https://github.com/Tencent/WeKnora.git
+cd WeKnora
 Copy-Item .env.example .env
-```
+docker compose pull
+docker compose up -d
+~~~
 
-编辑 `.env`，至少填写：
+官方默认地址：
 
-- `OPENAI_API_KEY`
-- `OPENAI_BASE_URL`
-- `MODEL_NAME`
-- `JWT_SECRET`
+- WeKnora Web UI：<http://localhost>
+- WeKnora API：<http://localhost:8080>
 
-首次只测试登录、聊天和本地知识库时，保持：
+在 WeKnora Web UI 中配置模型、Embedding 和知识库，然后在“设置 -> API Keys”创建 API Key。
 
-```text
-KNOWLEDGE_PROVIDER=local
-```
+## 二、配置本项目
 
-如果已经启动 WeKnora，再填写 `WEKNORA_API_KEY`、`WEKNORA_EMBEDDING_MODEL_ID`，并改成：
+回到本项目根目录：
 
-```text
+~~~powershell
+Copy-Item .env.example .env
+~~~
+
+编辑 .env，至少填写：
+
+~~~dotenv
+OPENAI_API_KEY=你的模型接口密钥
+OPENAI_BASE_URL=你的OpenAI兼容接口地址
+MODEL_NAME=你的聊天模型名称
+JWT_SECRET=一串较长的随机字符串
+
 KNOWLEDGE_PROVIDER=weknora
-```
+WEKNORA_BASE_URL=http://127.0.0.1:8080
+WEKNORA_API_KEY=你的WeKnora API Key
 
-## 启动
+DATABASE_BACKEND=postgres
+REDIS_URL=redis://127.0.0.1:6379/0
+~~~
 
-先确认 Docker Desktop 已经启动，并且 Linux 容器引擎可用。
+如果首次上传时需要本项目自动创建 WeKnora 知识库，再填写：
 
-```powershell
+~~~dotenv
+WEKNORA_EMBEDDING_MODEL_ID=WeKnora 中的模型名称或真实模型 ID
+~~~
+
+## 三、启动本项目
+
+~~~powershell
 docker compose up --build
-```
+~~~
 
-启动成功后访问：
+本项目 Compose 会启动四个服务：
 
-- 前端：<http://localhost:8080>
-- 后端健康检查：<http://localhost:8765/health>
+| 服务 | 用途 |
+| --- | --- |
+| postgres | 保存本项目用户、会话、消息、订单和退款 |
+| redis | 共享登录限流和临时状态 |
+| backend | FastAPI 和 Agent |
+| frontend | Vue 3 页面 |
+
+本项目访问地址：
+
+- 前端：<http://localhost:8088>
+- 后端：<http://localhost:8765>
 - Swagger：<http://localhost:8765/docs>
+- 健康检查：<http://localhost:8765/health>
 
-后端通过健康检查后，前端才会启动。Compose 使用单独的 `WEKNORA_COMPOSE_BASE_URL` 和 `MCP_COMPOSE_SERVER_URL`，默认地址是 `host.docker.internal`，不会覆盖本地直接运行 Python 时使用的 `WEKNORA_BASE_URL` 和 `MCP_SERVER_URL`。
+健康检查正常时应看到类似结果：
 
-## 停止和查看日志
+~~~json
+{
+  "status": "ok",
+  "database_backend": "postgres",
+  "redis_backend": "ok",
+  "knowledge_provider": "weknora"
+}
+~~~
 
-```powershell
+WeKnora 是默认知识库，因此没有配置 API Key 时后端会拒绝启动并给出明确错误。这样可以避免页面看似正常、实际无法检索知识库。
+
+## 四、停止和查看日志
+
+~~~powershell
 docker compose ps
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose down
-```
+~~~
 
-`data`、`sessions`、`configs` 和 `knowledge` 映射到项目目录，停止或重新构建不会自动删除数据。
+PostgreSQL 和 Redis 数据保存在 Docker volumes 中。普通的 docker compose down 不会删除它们。
 
-## 常见问题
+如果明确要删除本项目数据库和 Redis 数据：
 
-### 页面能打开，但聊天失败
+~~~powershell
+docker compose down -v
+~~~
 
-先检查：
+这个命令会删除本项目的 Docker volumes，请确认不需要保留本项目数据后再执行。
 
-1. `/health` 是否返回 `status: ok`。
-2. `.env` 中的模型地址、模型名称和 API Key 是否正确。
-3. 如果没有启动 WeKnora，确认 `KNOWLEDGE_PROVIDER=local`。
-4. 如果使用 WeKnora，确认 WeKnora 的服务地址和 API Key 配置正确。
+## 五、创建管理员
 
-### 端口被占用
+本项目管理员账号在 backend 容器中创建，这样它会使用同一个 PostgreSQL：
 
-修改 `compose.yaml` 左侧端口，例如：
+~~~powershell
+docker compose exec backend uv run --no-sync python -m api.admin_setup
+~~~
 
-```yaml
-ports:
-  - "8088:80"
-```
+## 六、常见问题
 
-然后使用 `http://localhost:8088` 访问前端。后端端口也可以按同样方式修改，但要同步修改 `FRONTEND_API_BASE_URL`。
+### 页面无法打开
 
-### 想清空学习数据
+确认 Docker Desktop 已启动，并执行：
 
-停止 Compose 后，手动删除本地的 `data/app.db` 和 `sessions` 内容即可。不要删除 `.env`，它保存的是本机配置。
+~~~powershell
+docker compose ps
+~~~
+
+### 端口冲突
+
+本项目默认使用 8088 作为前端端口，因为 WeKnora 默认使用 80 和 8080。
+
+可以在 .env 中改：
+
+~~~dotenv
+FRONTEND_PORT=8090
+~~~
+
+Compose 会把这里设置的前端端口自动加入后端 CORS 白名单。
+
+### backend 无法连接 WeKnora
+
+Docker 容器不能用 127.0.0.1 访问宿主机的 WeKnora。Compose 默认使用：
+
+~~~dotenv
+WEKNORA_COMPOSE_BASE_URL=http://host.docker.internal:8080
+~~~
+
+### 想使用本地备用模式
+
+本地模式只用于离线学习，不是 V2 默认模式：
+
+~~~dotenv
+KNOWLEDGE_PROVIDER=local
+DATABASE_BACKEND=sqlite
+REDIS_URL=
+~~~
+
+切换后需要重新构建或重启 backend。
