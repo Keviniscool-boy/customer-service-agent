@@ -1,5 +1,13 @@
 # 可配置客服 Agent
 
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.141%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Vue](https://img.shields.io/badge/Vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![WeKnora](https://img.shields.io/badge/RAG-WeKnora-00A4EF)](https://github.com/Tencent/WeKnora)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+
 这是一个开源学习版客服 Agent 项目。
 
 项目本身只负责用户登录、权限、Agent 配置、聊天接口和业务工具编排。知识库使用 [Tencent/WeKnora](https://github.com/Tencent/WeKnora)，业务数据使用 PostgreSQL，Redis 用于共享限流和临时状态。
