@@ -226,7 +226,6 @@ docs/               API、RAG、Compose 和学习记录
 - `GET /orders`：查看自己的订单
 - `GET /products`：搜索商品
 - `GET /agents`：查看可用 Agent
-- `POST /agents`：创建自己的 Agent
 - `GET /admin/summary`：管理员统计
 - `GET /admin/sessions`：管理员查看会话
 - `POST /admin/agents/{agent_id}/knowledge`：管理员上传知识库文件

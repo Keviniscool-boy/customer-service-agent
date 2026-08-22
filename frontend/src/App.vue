@@ -43,24 +43,6 @@ const suggestedQuestions = computed(() =>
     .map((scope) => `我想咨询${scope}`),
 )
 
-function createEmptyAgentForm() {
-  return {
-    agent_id: '',
-    name: '',
-    role: '',
-    welcome_message: '',
-    tone: '友好、清晰、简洁',
-    service_scope: '',
-    custom_prompt: '',
-    behavior_rules: '',
-    forbidden_topics: '',
-    knowledge_provider: 'weknora',
-    knowledge_base_id: '',
-    model_name: '',
-    temperature: '',
-  }
-}
-
 function visibleReply(payload) {
   let value = typeof payload === 'string' ? payload : payload?.reply
   if (typeof value !== 'string') return ''

@@ -1,5 +1,5 @@
 import logging
-import shutil
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -44,10 +44,7 @@ from api.rate_limit import create_login_rate_limiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
-    AGENT_VERSION_DIR,
     PROJECT_ROOT,
-    AGENT_CONFIG_DIR,
-    delete_agent_config,
     get_default_ecom_agent_config,
     load_agent_config_by_id,
     list_agent_config_versions,
@@ -58,8 +55,22 @@ from config.agent_config import (
 from prompts.builder import build_system_prompt
 
 
-app = FastAPI(title="Ecom Service Agent")
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        init_db()
+    except Exception as error:
+        logger.exception("数据库初始化失败")
+        raise RuntimeError(
+            "数据库初始化失败，请检查 DATABASE_BACKEND、POSTGRES_DSN 和数据库服务"
+        ) from error
+    yield
+
+
+app = FastAPI(title="Ecom Service Agent", lifespan=lifespan)
 login_rate_limiter = create_login_rate_limiter(
     settings.redis_url,
     settings.redis_timeout_seconds,
@@ -175,7 +186,7 @@ class UserAgentConfigRequest(BaseModel):
     behavior_rules: list[str] = Field(default_factory=list, max_length=20)
     forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
     enabled_tools: list[str] = Field(default_factory=list)
-    knowledge_provider: Literal["local", "weknora"] = "weknora"
+    knowledge_provider: Literal["local", "weknora"] = "local"
     knowledge_base_id: str | None = Field(default=None, max_length=100)
     model_name: str | None = None
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
@@ -190,17 +201,6 @@ class OrderCreateRequest(BaseModel):
 
 class RefundCreateRequest(BaseModel):
     reason: str = Field(min_length=1)
-
-
-@app.on_event("startup")
-def startup():
-    try:
-        init_db()
-    except Exception as error:
-        logger.exception("数据库初始化失败")
-        raise RuntimeError(
-            "数据库初始化失败，请检查 DATABASE_BACKEND、POSTGRES_DSN 和数据库服务"
-        ) from error
 
 
 @app.get("/health")
@@ -333,13 +333,22 @@ def get_user_agent_config(agent_id: str, user: dict):
     """只返回当前用户有权使用的 Agent，避免泄露私有 Agent 是否存在。"""
 
     config = get_agent_config(agent_id)
-    if (
-        user.get("role") != "admin"
-        and not config.is_public
-        and config.owner_user_id != user.get("id")
-    ):
+    if user.get("role") != "admin" and not config.is_public:
         raise HTTPException(status_code=404, detail="Agent 不存在")
     return config
+
+
+def public_agent_payload(config: AgentConfig) -> dict:
+    """只向顾客返回选择客服和聊天所需的公开信息。"""
+
+    return {
+        "agent_id": config.agent_id,
+        "name": config.name,
+        "role": config.role,
+        "welcome_message": config.welcome_message,
+        "service_scope": config.service_scope,
+        "is_public": config.is_public,
+    }
 
 
 def build_agent_prompt_preview(agent_config: AgentConfig) -> dict:
@@ -358,24 +367,6 @@ def build_agent_prompt_preview(agent_config: AgentConfig) -> dict:
             if tool.get("function", {}).get("name")
         ],
     }
-
-
-def get_owned_agent_config(agent_id: str, user: dict):
-    """只返回当前用户拥有的 Agent，公开 Agent 也不能被用户修改。"""
-
-    config = get_agent_config(agent_id)
-    if config.owner_user_id != user.get("id"):
-        raise HTTPException(status_code=404, detail="Agent 不存在")
-    return config
-
-
-def get_manageable_agent_config(agent_id: str, user: dict):
-    """返回管理员或 Agent 所有者可以维护的 Agent。"""
-
-    config = get_agent_config(agent_id)
-    if user.get("role") != "admin" and config.owner_user_id != user.get("id"):
-        raise HTTPException(status_code=404, detail="Agent 不存在")
-    return config
 
 
 def validate_agent_owner(config: AgentConfig) -> None:
@@ -559,19 +550,11 @@ def list_agents(user: dict = Depends(get_current_user)):
     configs = load_agent_configs()
     return {
         "agents": [
-            {
-                "agent_id": config.agent_id,
-                "name": config.name,
-                "role": config.role,
-                "welcome_message": config.welcome_message,
-                "service_scope": config.service_scope,
-                "is_public": config.is_public,
-            }
+            public_agent_payload(config)
             for config in configs.values()
             if (
                 user.get("role") == "admin"
                 or config.is_public
-                or config.owner_user_id == user.get("id")
             )
         ]
     }
@@ -582,26 +565,7 @@ def create_user_agent(
     request: UserAgentConfigRequest,
     user: dict = Depends(get_current_user),
 ):
-    unsupported_tools = set(request.enabled_tools) - {"search_knowledge"}
-    if unsupported_tools:
-        raise HTTPException(
-            status_code=400,
-            detail="用户 Agent 目前只能启用 search_knowledge 工具",
-        )
-
-    config = AgentConfig(
-        **request.model_dump(),
-        owner_user_id=user["id"],
-        is_public=False,
-        knowledge_base_path=(
-            f"data/knowledge/{user['id']}/{request.agent_id}"
-        ),
-    )
-    try:
-        save_agent_config(config)
-    except FileExistsError as error:
-        raise HTTPException(status_code=409, detail="Agent 已存在") from error
-    return {"agent": config.model_dump()}
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.get("/agents/{agent_id}")
@@ -610,7 +574,7 @@ def user_agent_detail(
     user: dict = Depends(get_current_user),
 ):
     config = get_user_agent_config(agent_id, user)
-    return {"agent": config.model_dump()}
+    return {"agent": public_agent_payload(config)}
 
 
 @app.get("/agents/{agent_id}/prompt-preview")
@@ -618,15 +582,11 @@ def user_agent_prompt_preview(
     agent_id: str,
     user: dict = Depends(get_current_user),
 ):
-    return build_agent_prompt_preview(get_user_agent_config(agent_id, user))
+    raise HTTPException(status_code=403, detail="Prompt 只能由管理员查看")
 
 
 def agent_config_versions(agent_id: str, user: dict):
-    get_owned_agent_config(agent_id, user)
-    try:
-        return {"agent_id": agent_id, "versions": list_agent_config_versions(agent_id)}
-    except ValueError as error:
-        raise HTTPException(status_code=503, detail="Agent 配置版本暂时不可用") from error
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.get("/agents/{agent_id}/versions")
@@ -643,15 +603,7 @@ def restore_user_agent_version(
     version: int,
     user: dict = Depends(get_current_user),
 ):
-    config = get_owned_agent_config(agent_id, user)
-    try:
-        restored = load_agent_config_version(agent_id, version)
-        save_agent_config(restored, overwrite=True)
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail="Agent 配置版本不存在") from error
-    except (OSError, ValueError) as error:
-        raise HTTPException(status_code=503, detail="Agent 配置版本恢复失败") from error
-    return {"agent": restored.model_dump(), "restored_version": version}
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.put("/agents/{agent_id}")
@@ -660,31 +612,7 @@ def update_user_agent(
     request: UserAgentConfigRequest,
     user: dict = Depends(get_current_user),
 ):
-    if request.agent_id != agent_id:
-        raise HTTPException(status_code=400, detail="Agent ID 不能修改")
-    config = get_owned_agent_config(agent_id, user)
-    unsupported_tools = set(request.enabled_tools) - {"search_knowledge"}
-    if unsupported_tools:
-        raise HTTPException(
-            status_code=400,
-            detail="用户 Agent 目前只能启用 search_knowledge 工具",
-        )
-
-    request_data = request.model_dump()
-    request_data["knowledge_base_id"] = (
-        request.knowledge_base_id or config.knowledge_base_id
-    )
-    updated_config = AgentConfig(
-        **request_data,
-        owner_user_id=config.owner_user_id,
-        is_public=config.is_public,
-        knowledge_base_path=config.knowledge_base_path,
-    )
-    try:
-        save_agent_config(updated_config, overwrite=True)
-    except OSError as error:
-        raise HTTPException(status_code=500, detail="Agent 配置保存失败") from error
-    return {"agent": updated_config.model_dump()}
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.delete("/agents/{agent_id}")
@@ -692,35 +620,7 @@ def delete_user_agent(
     agent_id: str,
     user: dict = Depends(get_current_user),
 ):
-    config = get_owned_agent_config(agent_id, user)
-    source_dir, _, _ = get_agent_knowledge_paths(config)
-    expected_dir = (
-        PROJECT_ROOT / "data" / "knowledge" / user["id"] / agent_id
-    ).resolve()
-    if source_dir != expected_dir:
-        raise HTTPException(status_code=400, detail="Agent 知识库路径不符合用户目录")
-
-    config_path = AGENT_CONFIG_DIR / f"{agent_id}.json"
-    version_dir = AGENT_VERSION_DIR / agent_id
-    if config.knowledge_provider == "weknora" and config.knowledge_base_id:
-        try:
-            get_weknora_client().delete_knowledge_base(config.knowledge_base_id)
-        except WeKnoraError as error:
-            raise weknora_http_exception(error) from error
-    try:
-        delete_agent_config(agent_id)
-        if source_dir.is_dir():
-            shutil.rmtree(source_dir)
-        if version_dir.is_dir():
-            shutil.rmtree(version_dir)
-        user_agent_root = source_dir.parent
-        if user_agent_root.is_dir() and not any(user_agent_root.iterdir()):
-            user_agent_root.rmdir()
-    except OSError as error:
-        if not config_path.exists():
-            raise HTTPException(status_code=500, detail="Agent 删除失败") from error
-        raise HTTPException(status_code=500, detail="Agent 文件清理失败") from error
-    return {"success": True, "agent_id": agent_id}
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.get("/admin/agents/{agent_id}")
@@ -814,11 +714,7 @@ def knowledge_status(
     agent_id: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = (
-        get_agent_config(agent_id)
-        if user.get("role") == "admin"
-        else get_manageable_agent_config(agent_id, user)
-    )
+    agent_config = get_agent_config(agent_id)
     if agent_config.knowledge_provider == "weknora":
         return weknora_knowledge_status(agent_id, agent_config)
 
@@ -841,11 +737,7 @@ async def upload_knowledge(
     file: UploadFile = File(...),
     user: dict = Depends(require_admin),
 ):
-    agent_config = (
-        get_agent_config(agent_id)
-        if user.get("role") == "admin"
-        else get_manageable_agent_config(agent_id, user)
-    )
+    agent_config = get_agent_config(agent_id)
     if agent_config.knowledge_provider == "weknora":
         return await upload_weknora_knowledge(agent_id, agent_config, file)
 
@@ -891,11 +783,7 @@ def rebuild_knowledge(
     agent_id: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = (
-        get_agent_config(agent_id)
-        if user.get("role") == "admin"
-        else get_manageable_agent_config(agent_id, user)
-    )
+    agent_config = get_agent_config(agent_id)
     if agent_config.knowledge_provider == "weknora":
         if not agent_config.knowledge_base_id:
             return {
@@ -944,11 +832,7 @@ def delete_knowledge_file(
     filename: str,
     user: dict = Depends(require_admin),
 ):
-    agent_config = (
-        get_agent_config(agent_id)
-        if user.get("role") == "admin"
-        else get_manageable_agent_config(agent_id, user)
-    )
+    agent_config = get_agent_config(agent_id)
     safe_filename = Path(filename).name
     if safe_filename != filename or Path(filename).suffix.lower() != ".md":
         raise HTTPException(status_code=400, detail="文件名无效")
@@ -1016,7 +900,7 @@ def delete_knowledge_file(
 @app.get("/agents/{agent_id}/knowledge")
 def user_knowledge_status(
     agent_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     return knowledge_status(agent_id, user)
 
@@ -1025,7 +909,7 @@ def user_knowledge_status(
 async def user_upload_knowledge(
     agent_id: str,
     file: UploadFile = File(...),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     return await upload_knowledge(agent_id, file, user)
 
@@ -1033,7 +917,7 @@ async def user_upload_knowledge(
 @app.post("/agents/{agent_id}/knowledge/rebuild")
 def user_rebuild_knowledge(
     agent_id: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     return rebuild_knowledge(agent_id, user)
 
@@ -1042,7 +926,7 @@ def user_rebuild_knowledge(
 def user_delete_knowledge_file(
     agent_id: str,
     filename: str,
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(require_admin),
 ):
     return delete_knowledge_file(agent_id, filename, user)
 
