@@ -247,3 +247,9 @@ npm run build
 - `v2.1`：Agent 权限隔离和管理员配置优化
 
 V1 的分支和 Tag 保留，不影响本项目继续使用 V2。
+
+## 许可证
+
+本项目采用 [Apache License 2.0](LICENSE) 开源。
+
+WeKnora 及其他第三方依赖仍遵循各自的开源许可证。
