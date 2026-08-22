@@ -14,16 +14,16 @@ class Settings(BaseSettings):
     weknora_api_key: str = ""
     weknora_timeout_seconds: float = 10.0
     weknora_embedding_model_id: str = ""
-    knowledge_provider: Literal["local", "weknora"] = "local"
+    knowledge_provider: Literal["local", "weknora"] = "weknora"
     weknora_knowledge_base_id: str = ""
-    redis_url: str = ""
+    redis_url: str = "redis://127.0.0.1:6379/0"
     redis_timeout_seconds: float = 1.0
-    database_backend: Literal["sqlite", "postgres"] = "sqlite"
+    database_backend: Literal["sqlite", "postgres"] = "postgres"
     postgres_dsn: str = ""
     database_path: str = "data/app.db"
     cors_origins: str = (
         "http://localhost:5173,http://127.0.0.1:5173,"
-        "http://localhost:8080,http://127.0.0.1:8080"
+        "http://localhost:8088,http://127.0.0.1:8088"
     )
 
     model_config = {"env_file": ".env"}

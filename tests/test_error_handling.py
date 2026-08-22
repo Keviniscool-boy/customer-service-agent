@@ -32,10 +32,8 @@ class ErrorHandlingTest(unittest.TestCase):
         self.assertEqual(len(agent.messages), 1)
 
     def test_rag_empty_result_returns_failure(self):
-        with patch(
-            "agent.tools.knowledge._retriever.search",
-            return_value=[],
-        ):
+        with patch("agent.tools.knowledge._retriever") as retriever:
+            retriever.search.return_value = []
             result = json.loads(search_knowledge("完全无关的问题"))
 
         self.assertEqual(

@@ -4,6 +4,8 @@
 
 > 当前版本说明：`POST /chat` 对外返回 `text/plain`，只显示客服自然语言回复，不显示 `intent`、`confidence`、`requires_human` 或 JSON 字段。下面较早的测试记录保留作为开发过程参考。
 
+> 当前 V2 默认运行依赖 WeKnora、PostgreSQL 和 Redis；旧记录中出现的 SQLite 和本地 RAG 是当时的真实测试环境。
+
 ## 测试流程
 
 ### 1. 健康检查

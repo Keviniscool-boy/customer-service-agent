@@ -28,9 +28,15 @@ class WeKnoraClientTest(unittest.TestCase):
             ).search("kb-1", "怎么退货", 3)
 
         request = open_mock.call_args.args[0]
-        self.assertEqual(request.full_url, "http://weknora.local/api/v1/knowledge-search")
+        self.assertEqual(
+            request.full_url,
+            "http://weknora.local/api/v1/knowledge-bases/kb-1/hybrid-search",
+        )
         self.assertEqual(request.get_header("X-api-key"), "secret-key")
-        self.assertEqual(json.loads(request.data)["knowledge_base_id"], "kb-1")
+        request_payload = json.loads(request.data)
+        self.assertEqual(request_payload["query_text"], "怎么退货")
+        self.assertEqual(request_payload["match_count"], 3)
+        self.assertEqual(request_payload["vector_threshold"], 0.30)
         self.assertEqual(result[0]["text"], "答案")
 
     def test_missing_api_key_is_reported(self):
