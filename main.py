@@ -1,9 +1,11 @@
 from agent.auth_cli import login_or_register
 from agent.chat import EcomAgent
+from agent.database import init_db
 from agent.presentation import visible_reply
 
 
 def main():
+    init_db()
     user = login_or_register()
     if user is None:
         print("已退出。")

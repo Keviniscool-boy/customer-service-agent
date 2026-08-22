@@ -27,6 +27,7 @@ class ChatSQLiteTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database.DB_PATH = Path(temp_dir) / "app.db"
             try:
+                database.init_db()
                 with patch("agent.chat.MCPClient.connect", return_value=[]):
                     first = EcomAgent(user_id="sqlite-test-user")
                     first.messages.extend(
@@ -66,6 +67,7 @@ class ChatSQLiteTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             database.DB_PATH = Path(temp_dir) / "app.db"
             try:
+                database.init_db()
                 with patch("agent.chat.MCPClient.connect", return_value=[]):
                     first = EcomAgent(
                         user_id="multi-agent-user",

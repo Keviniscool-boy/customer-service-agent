@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.responses import JSONResponse, PlainTextResponse
+from jwt import InvalidTokenError
 from pydantic import BaseModel, Field
 
 from agent.chat import EcomAgent
@@ -316,27 +317,43 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    token = credentials.credentials
     try:
-        token = credentials.credentials
         payload = decode_access_token(token)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise ValueError("Token 缺少用户信息")
-        user = get_user_by_id(user_id)
-        if user is None:
-            raise ValueError("用户不存在")
-        return user
+    except InvalidTokenError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token 无效或已过期",
+        ) from error
     except RuntimeError as error:
         logger.exception("认证服务配置错误")
         raise HTTPException(
             status_code=503,
             detail="认证服务暂时不可用，请联系管理员",
         ) from error
-    except Exception as error:
+
+    user_id = payload.get("sub")
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token 无效或已过期",
+        )
+
+    try:
+        user = get_user_by_id(user_id)
+    except Exception as error:
+        logger.exception("认证期间查询用户失败")
+        raise HTTPException(
+            status_code=503,
+            detail="数据库暂时不可用，请稍后重试",
         ) from error
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token 无效或已过期",
+        )
+    return user
 
 
 def require_admin(user: dict = Depends(get_current_user)) -> dict:

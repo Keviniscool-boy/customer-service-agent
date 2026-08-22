@@ -6,7 +6,6 @@ from openai import OpenAI
 from agent.database import (
     create_session,
     get_latest_session_id,
-    init_db,
     record_tool_audit,
     load_messages,
     load_summary,
@@ -40,7 +39,6 @@ class EcomAgent:
         business_repository: BusinessRepository | None = None,
         logistics_provider: LogisticsProvider | None = None,
     ):
-        init_db()
         self.user_id = user_id
         self.agent_config = agent_config or get_default_ecom_agent_config()
         self.tool_registry = tool_registry or get_default_registry(

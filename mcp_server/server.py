@@ -6,6 +6,7 @@ ROOT=Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from mcp.server import MCPServer
+from agent.database import init_db
 from agent.tools.order import query_order as local_query_order
 
 mcp = MCPServer("ecom-tools")
@@ -21,6 +22,7 @@ def query_order(order_id: str, user_id: str | None = None) -> str:
     return json.dumps(result, ensure_ascii=False)
 
 if __name__ == "__main__":
+    init_db()
     mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
