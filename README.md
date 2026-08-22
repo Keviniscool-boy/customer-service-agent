@@ -232,7 +232,6 @@ npm run build
 - PostgreSQL 和 Redis 是本项目应用层的依赖；WeKnora 还有自己的内部数据库和 Redis，不能直接共用或修改它的内部表。
 - 本项目不会把 WeKnora 的源码复制进来，也不会重复实现它的解析、切片、向量和检索能力。
 - 订单、商品、物流和退款是演示连接器，真实商家接入时替换 `BusinessRepository` 和 `LogisticsProvider`。
-- 这是开源学习版，不承诺生产环境的安全性、稳定性和并发能力。
 
 ## 相关文档
 
