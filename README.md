@@ -90,7 +90,7 @@ Agent 启动时会尝试连接 `MCP Server`。如果 MCP 没有启动，Agent �
 
 ## 4. WeKnora 知识库
 
-2.0 默认使用 WeKnora。WeKnora 负责文档解析、切片、向量化、混合检索和知识库管理，当前项目只负责调用它的接口。
+2.0 支持使用 WeKnora 作为知识库服务。WeKnora 负责文档解析、切片、向量化、混合检索和知识库管理，当前项目只负责调用它的接口。首次使用 Compose 时可以先用 `local` 模式，不依赖 WeKnora。
 
 管理员或 Agent 所有者可以在页面上传 Markdown。第一次上传时，如果没有填写知识库 ID，系统会自动创建 WeKnora 知识库；之后通过保存的知识库 ID 查询。
 
@@ -200,8 +200,11 @@ Copy-Item .env.example .env
 | `WEKNORA_BASE_URL` | WeKnora 后端地址 |
 | `WEKNORA_API_KEY` | WeKnora API Key，只保存在后端环境变量 |
 | `WEKNORA_EMBEDDING_MODEL_ID` | WeKnora 的 Embedding 模型名称或 ID，项目会自动解析 |
-| `KNOWLEDGE_PROVIDER` | 默认知识库服务，推荐 `weknora`，离线时可用 `local` |
+| `KNOWLEDGE_PROVIDER` | 知识库服务；首次测试可用 `local`，接入 WeKnora 时用 `weknora` |
 | `WEKNORA_KNOWLEDGE_BASE_ID` | 已有 WeKnora 知识库 ID，留空则首次上传时自动创建 |
+| `FRONTEND_API_BASE_URL` | Docker Compose 构建前端时使用的后端地址 |
+| `WEKNORA_COMPOSE_BASE_URL` | Compose 连接宿主机 WeKnora 的地址 |
+| `MCP_COMPOSE_SERVER_URL` | Compose 连接宿主机 MCP 的地址 |
 | `REDIS_URL` | 可选 Redis 地址，填写后启用共享登录失败限流 |
 | `REDIS_TIMEOUT_SECONDS` | Redis 连接超时时间 |
 | `CORS_ORIGINS` | 允许访问后端的前端地址，多个地址用英文逗号分隔 |
@@ -276,13 +279,27 @@ uv run python main.py
 
 ## 9. Docker Compose 启动
 
-先确保根目录已经有 `.env`，然后运行：
+首次启动先复制环境变量模板：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+编辑 `.env`，填写模型 Key、模型地址、模型名称和 `JWT_SECRET`。如果没有启动 WeKnora，先保持：
+
+```text
+KNOWLEDGE_PROVIDER=local
+```
+
+如果使用 WeKnora，再改成 `weknora` 并填写 WeKnora 配置。
+
+然后运行：
 
 ```powershell
 docker compose up --build
 ```
 
-Compose 会启动两个服务：
+Compose 会启动两个服务，并等待后端健康检查通过后再启动前端：
 
 | 服务 | 容器端口 | 本机访问端口 | 作用 |
 | --- | --- | --- | --- |
@@ -294,6 +311,10 @@ Compose 会启动两个服务：
 - 用户页面：<http://localhost:8080>
 - 后端健康检查：<http://localhost:8765/health>
 - Swagger：<http://localhost:8765/docs>
+
+容器内的 `127.0.0.1` 只代表当前容器。Compose 使用单独的 `WEKNORA_COMPOSE_BASE_URL` 和 `MCP_COMPOSE_SERVER_URL`，默认通过 `host.docker.internal` 连接宿主机上的独立服务，不会覆盖本地运行配置。
+
+详细启动、停止、日志和常见问题见 [Compose启动说明.md](docs/Compose启动说明.md)。
 
 停止服务：
 
@@ -501,3 +522,4 @@ ecom-service-agent-learning/
 - [RAG测试记录.md](docs/RAG测试记录.md)：知识库检索测试
 - [压测记录.md](docs/压测记录.md)：Locust 压测结果
 - [业务连接器说明.md](docs/业务连接器说明.md)：以后接真实订单和物流系统时的替换边界
+- [Compose启动说明.md](docs/Compose启动说明.md)：Docker Compose 启动、停止和排错

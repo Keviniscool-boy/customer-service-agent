@@ -5,6 +5,11 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      # 容器中的 127.0.0.1 是 backend 容器自己，外部服务要走宿主机地址。
+      WEKNORA_BASE_URL: ${WEKNORA_COMPOSE_BASE_URL:-http://host.docker.internal:8080}
+      MCP_SERVER_URL: ${MCP_COMPOSE_SERVER_URL:-http://host.docker.internal:9123/mcp}
+      KNOWLEDGE_PROVIDER: ${KNOWLEDGE_PROVIDER:-local}
     ports:
       - "8765:8765"
     volumes:
@@ -12,6 +17,23 @@ services:
       - ./sessions:/app/sessions
       - ./configs:/app/configs
       - ./knowledge:/app/knowledge
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        - CMD
+        - uv
+        - run
+        - --no-sync
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   frontend:
@@ -19,9 +41,10 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:8765
+        VITE_API_BASE_URL: ${FRONTEND_API_BASE_URL:-http://localhost:8765}
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
