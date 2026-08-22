@@ -25,16 +25,6 @@ const messagesLoading = ref(false)
 const sending = ref(false)
 const workspaceError = ref('')
 const messagesEl = ref(null)
-const showAgentManager = ref(false)
-const agentManagerMode = ref('create')
-const agentManagerLoading = ref(false)
-const agentManagerError = ref('')
-const agentFile = ref(null)
-const agentKnowledge = ref(null)
-const agentVersions = ref([])
-const agentPromptPreview = ref('')
-const agentForm = ref(createEmptyAgentForm())
-
 const isLogin = computed(() => mode.value === 'login')
 const isLoggedIn = computed(() => authenticated.value && Boolean(user.value))
 const isAdmin = computed(() => isLoggedIn.value && user.value.role === 'admin')
@@ -52,8 +42,6 @@ const suggestedQuestions = computed(() =>
     .slice(0, 3)
     .map((scope) => `我想咨询${scope}`),
 )
-
-const ownedAgents = computed(() => agents.value.filter((agent) => !agent.is_public))
 
 function createEmptyAgentForm() {
   return {
@@ -181,7 +169,7 @@ async function loadSessions() {
 async function loadAgents() {
   try {
     const data = await apiRequest('/agents')
-    agents.value = data.agents || []
+    agents.value = (data.agents || []).filter((agent) => agent.is_public || isAdmin.value)
     if (!agents.value.some((agent) => agent.agent_id === activeAgentId.value)) {
       activeAgentId.value = agents.value[0]?.agent_id || 'ecom-default'
     }
@@ -190,252 +178,6 @@ async function loadAgents() {
   } catch (error) {
     workspaceError.value = error.message
   }
-}
-
-function openAgentManager() {
-  showAgentManager.value = true
-  agentManagerMode.value = 'create'
-  agentManagerError.value = ''
-  agentForm.value = createEmptyAgentForm()
-  agentKnowledge.value = null
-  agentVersions.value = []
-  agentPromptPreview.value = ''
-  agentFile.value = null
-}
-
-function closeAgentManager() {
-  showAgentManager.value = false
-  agentManagerError.value = ''
-  agentFile.value = null
-  agentVersions.value = []
-  agentPromptPreview.value = ''
-}
-
-async function editOwnedAgent(agentId) {
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    const data = await apiRequest(`/agents/${agentId}`)
-    const config = data.agent
-    agentManagerMode.value = 'edit'
-    agentForm.value = {
-      agent_id: config.agent_id,
-      name: config.name,
-      role: config.role,
-      welcome_message: config.welcome_message,
-      tone: config.tone,
-      service_scope: (config.service_scope || []).join('\n'),
-      custom_prompt: config.custom_prompt || '',
-      behavior_rules: (config.behavior_rules || []).join('\n'),
-      forbidden_topics: (config.forbidden_topics || []).join('\n'),
-      knowledge_provider: config.knowledge_provider || 'weknora',
-      knowledge_base_id: config.knowledge_base_id || '',
-      model_name: config.model_name || '',
-      temperature: config.temperature ?? '',
-    }
-    await Promise.all([loadAgentKnowledge(), loadAgentVersions()])
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function loadAgentKnowledge() {
-  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
-  try {
-    agentKnowledge.value = await apiRequest(
-      `/agents/${agentForm.value.agent_id}/knowledge`,
-    )
-  } catch (error) {
-    agentManagerError.value = error.message
-  }
-}
-
-async function loadAgentVersions() {
-  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
-  try {
-    const data = await apiRequest(`/agents/${agentForm.value.agent_id}/versions`)
-    agentVersions.value = data.versions || []
-  } catch (error) {
-    agentManagerError.value = error.message
-  }
-}
-
-async function restoreAgentVersion(version) {
-  if (!formHasAgent()) return
-  if (!window.confirm(`确定恢复到配置版本 v${version} 吗？当前配置会保留为新版本。`)) return
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    await apiRequest(
-      `/agents/${agentForm.value.agent_id}/versions/${version}/restore`,
-      { method: 'POST' },
-    )
-    await editOwnedAgent(agentForm.value.agent_id)
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function waitForAgentKnowledge(filename) {
-  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
-  for (let attempt = 0; attempt < 15; attempt += 1) {
-    await loadAgentKnowledge()
-    const status = agentKnowledge.value
-    if (status?.provider !== 'weknora' || !filename) return
-    const document = (status.documents || []).find(
-      (item) => (item.file_name || item.title) === filename,
-    )
-    if (document?.parse_status === 'completed' || document?.parse_status === 'failed') return
-    await new Promise((resolve) => window.setTimeout(resolve, 2000))
-  }
-}
-
-async function previewAgentPrompt() {
-  if (agentManagerMode.value !== 'edit' || !agentForm.value.agent_id) return
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    const data = await apiRequest(
-      `/agents/${agentForm.value.agent_id}/prompt-preview`,
-    )
-    agentPromptPreview.value = data.prompt || ''
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function saveUserAgent() {
-  const form = agentForm.value
-  if (!form.agent_id.trim() || !form.name.trim() || !form.role.trim()) {
-    agentManagerError.value = '请填写 Agent ID、名称和角色。'
-    return
-  }
-
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    const payload = {
-      agent_id: form.agent_id.trim(),
-      name: form.name.trim(),
-      role: form.role.trim(),
-      welcome_message: form.welcome_message.trim(),
-      tone: form.tone.trim(),
-      service_scope: form.service_scope.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
-      custom_prompt: form.custom_prompt.trim(),
-      behavior_rules: form.behavior_rules.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
-      forbidden_topics: form.forbidden_topics.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
-      enabled_tools: ['search_knowledge'],
-      knowledge_provider: form.knowledge_provider,
-      knowledge_base_id: form.knowledge_base_id.trim() || null,
-      model_name: form.model_name.trim() || null,
-      temperature: form.temperature === '' ? null : Number(form.temperature),
-    }
-    const path = agentManagerMode.value === 'edit'
-      ? `/agents/${form.agent_id}`
-      : '/agents'
-    const data = await apiRequest(path, {
-      method: agentManagerMode.value === 'edit' ? 'PUT' : 'POST',
-      body: JSON.stringify(payload),
-    })
-    activeAgentId.value = data.agent.agent_id
-    localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
-    closeAgentManager()
-    await loadAgents()
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function deleteUserAgent() {
-  if (!formHasAgent()) return
-  const agentId = agentForm.value.agent_id
-  if (!window.confirm(`确定删除 Agent「${agentForm.value.name}」及其个人知识库吗？`)) return
-
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    await apiRequest(`/agents/${agentId}`, { method: 'DELETE' })
-    if (activeAgentId.value === agentId) {
-      activeAgentId.value = 'ecom-default'
-      localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
-    }
-    closeAgentManager()
-    await loadAgents()
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-function selectAgentFile(event) {
-  agentFile.value = event.target.files?.[0] || null
-}
-
-async function uploadAgentKnowledge() {
-  if (!agentFile.value || !agentForm.value.agent_id) return
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    const formData = new FormData()
-    formData.append('file', agentFile.value)
-    const data = await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge`, {
-      method: 'POST',
-      body: formData,
-    })
-    agentFile.value = null
-    await waitForAgentKnowledge(data.filename)
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function rebuildAgentKnowledge() {
-  if (!agentForm.value.agent_id) return
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    await apiRequest(`/agents/${agentForm.value.agent_id}/knowledge/rebuild`, {
-      method: 'POST',
-    })
-    await loadAgentKnowledge()
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-async function deleteAgentKnowledge(filename) {
-  if (!formHasAgent()) return
-  if (!window.confirm(`确定删除 ${filename} 吗？`)) return
-  agentManagerLoading.value = true
-  agentManagerError.value = ''
-  try {
-    await apiRequest(
-      `/agents/${agentForm.value.agent_id}/knowledge/${encodeURIComponent(filename)}`,
-      { method: 'DELETE' },
-    )
-    await loadAgentKnowledge()
-  } catch (error) {
-    agentManagerError.value = error.message
-  } finally {
-    agentManagerLoading.value = false
-  }
-}
-
-function formHasAgent() {
-  return agentManagerMode.value === 'edit' && Boolean(agentForm.value.agent_id)
 }
 
 async function changeAgent() {
@@ -564,17 +306,13 @@ onMounted(() => {
       </button>
 
       <label class="agent-picker">
-        <span>当前 Agent</span>
+        <span>可用客服</span>
         <select v-model="activeAgentId" :disabled="sessionsLoading" @change="changeAgent">
           <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">
             {{ agent.name }}
           </option>
         </select>
       </label>
-
-      <button class="sidebar-action" type="button" @click="openAgentManager">
-        管理我的 Agent
-      </button>
 
       <div class="session-heading">
         <span>最近会话</span>
@@ -655,95 +393,6 @@ onMounted(() => {
       <p v-if="workspaceError" class="workspace-error">{{ workspaceError }}</p>
     </section>
 
-    <div v-if="showAgentManager" class="agent-manager-overlay" @click.self="closeAgentManager">
-      <section class="agent-manager-panel" aria-labelledby="agent-manager-title">
-        <header class="agent-manager-heading">
-          <div>
-            <p class="eyebrow">MY AGENTS</p>
-            <h2 id="agent-manager-title">{{ agentManagerMode === 'edit' ? '编辑 Agent' : '创建 Agent' }}</h2>
-          </div>
-          <button class="icon-close-button" type="button" title="关闭" @click="closeAgentManager">×</button>
-        </header>
-
-        <div class="agent-manager-layout">
-          <aside class="owned-agent-list">
-            <button class="agent-create-link" type="button" @click="openAgentManager">+ 新建 Agent</button>
-            <button
-              v-for="agent in ownedAgents"
-              :key="agent.agent_id"
-              class="owned-agent-item"
-              :class="{ active: agentManagerMode === 'edit' && agent.agent_id === agentForm.agent_id }"
-              type="button"
-              @click="editOwnedAgent(agent.agent_id)"
-            >
-              <strong>{{ agent.name }}</strong>
-              <span>{{ agent.agent_id }}</span>
-            </button>
-            <p v-if="!ownedAgents.length" class="manager-empty">还没有自己的 Agent</p>
-          </aside>
-
-          <form class="agent-form" @submit.prevent="saveUserAgent">
-            <label>Agent ID<input v-model="agentForm.agent_id" :disabled="agentManagerMode === 'edit'" placeholder="例如：我的知识库助手" /></label>
-            <label>名称<input v-model="agentForm.name" placeholder="例如：学习助手" /></label>
-            <label>角色<input v-model="agentForm.role" placeholder="这个 Agent 负责什么" /></label>
-            <label>欢迎语<input v-model="agentForm.welcome_message" placeholder="用户打开对话时看到的内容" /></label>
-            <label>语气<input v-model="agentForm.tone" placeholder="例如：友好、简洁" /></label>
-            <label>知识库服务<select v-model="agentForm.knowledge_provider"><option value="weknora">WeKnora</option><option value="local">本地 RAG（备用）</option></select></label>
-            <label>WeKnora 知识库 ID<input v-model="agentForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
-            <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
-            <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
-            <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
-            <label class="wide-field">自定义 Prompt<textarea v-model="agentForm.custom_prompt" rows="5" placeholder="告诉 Agent 应该如何工作，例如：你是一个学习助手，回答时先给结论，再给步骤。"></textarea></label>
-            <label class="wide-field">行为规则<textarea v-model="agentForm.behavior_rules" rows="3" placeholder="每行一条规则"></textarea></label>
-            <label class="wide-field">禁止主题<textarea v-model="agentForm.forbidden_topics" rows="3" placeholder="每行一个不处理的主题"></textarea></label>
-            <p class="agent-tool-note">当前个人 Agent 自动启用知识库搜索，不开放订单和退款工具。</p>
-            <p v-if="agentManagerError" class="manager-error">{{ agentManagerError }}</p>
-            <div class="agent-form-actions">
-              <button class="primary-button" type="submit" :disabled="agentManagerLoading">{{ agentManagerLoading ? '处理中...' : '保存 Agent' }}</button>
-              <button v-if="agentManagerMode === 'edit'" class="refresh-button" type="button" :disabled="agentManagerLoading" @click="previewAgentPrompt">预览 Prompt</button>
-              <button v-if="agentManagerMode === 'edit'" class="danger-button" type="button" :disabled="agentManagerLoading" @click="deleteUserAgent">删除 Agent</button>
-            </div>
-            <pre v-if="agentPromptPreview" class="prompt-preview">{{ agentPromptPreview }}</pre>
-
-            <template v-if="agentManagerMode === 'edit'">
-              <div class="knowledge-manager">
-                <div class="knowledge-manager-heading">
-                  <div><h3>个人知识库</h3><p>上传 Markdown 后由 WeKnora 自动解析。</p></div>
-                  <span>{{ agentKnowledge?.index_ready ? '已就绪' : agentKnowledge?.provider === 'weknora' ? '解析中' : '未就绪' }}</span>
-                </div>
-                <div class="knowledge-upload-row">
-                  <label class="file-picker">
-                    <span>{{ agentFile?.name || '选择 .md 文件' }}</span>
-                    <input type="file" accept=".md,text/markdown" @change="selectAgentFile" />
-                  </label>
-                  <button class="refresh-button" type="button" :disabled="agentManagerLoading || !agentFile" @click="uploadAgentKnowledge">上传</button>
-                  <button class="refresh-button" type="button" :disabled="agentManagerLoading" @click="rebuildAgentKnowledge">重建</button>
-                </div>
-                <div v-if="agentKnowledge?.files?.length" class="owned-knowledge-list">
-                  <div v-for="filename in agentKnowledge.files" :key="filename" class="owned-knowledge-item">
-                    <span>{{ filename }}</span>
-                    <button type="button" :disabled="agentManagerLoading" @click="deleteAgentKnowledge(filename)">删除</button>
-                  </div>
-                </div>
-                <p v-else class="manager-empty">还没有上传 Markdown 文件</p>
-              </div>
-              <div class="agent-versions">
-                <div class="knowledge-manager-heading">
-                  <div><h3>配置版本</h3><p>每次保存都会保留快照，最多保留最近 20 个版本。</p></div>
-                </div>
-                <div v-if="agentVersions.length" class="agent-version-list">
-                  <div v-for="item in agentVersions" :key="item.version" class="agent-version-item">
-                    <span>v{{ item.version }} · {{ item.created_at }}</span>
-                    <button class="refresh-button" type="button" :disabled="agentManagerLoading" @click="restoreAgentVersion(item.version)">恢复</button>
-                  </div>
-                </div>
-                <p v-else class="manager-empty">还没有配置版本。</p>
-              </div>
-            </template>
-          </form>
-        </div>
-      </section>
-    </div>
   </main>
 
   <main v-else class="auth-shell">
@@ -751,11 +400,11 @@ onMounted(() => {
       <div class="brand-mark" aria-hidden="true">AI</div>
       <p class="eyebrow">AGENT WORKSPACE</p>
       <h1>智能 Agent 工作台</h1>
-      <p class="brand-copy">配置角色、接入知识库，让每个 Agent 专注自己的任务。</p>
+      <p class="brand-copy">选择客服，直接提问，获得清晰的服务答复。</p>
       <div class="feature-list">
         <span>01</span><p>保存多轮对话</p>
-        <span>02</span><p>连接个人知识库</p>
-        <span>03</span><p>按需配置工具</p>
+        <span>02</span><p>查询订单和物流</p>
+        <span>03</span><p>咨询商品和售后</p>
       </div>
     </section>
 
