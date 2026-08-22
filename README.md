@@ -1,186 +1,104 @@
-=# 极客商城智能客服 Agent
+# 可配置客服 Agent
 
-这是一个用 Python 搭建的电商客服 Agent 学习项目，客服名字叫“小极”。
+这是一个可配置的 Agent 学习项目。
 
-项目把大模型、工具调用、MCP、RAG、会话记忆、用户登录和管理员后台串在了一起。它适合用来学习一个 Agent 项目从模型调用到 Web 应用的完整过程。
+项目默认提供“极客商城智能客服小极”这个示例，但它不只适用于电商。修改 Agent 配置、提示词和知识库后，也可以改造成其他类型的客服或业务助手。
 
-## 1. 能做什么
 
-| 模块 | 功能 |
-| --- | --- |
-| 用户 | 注册、登录、JWT 鉴权、普通用户和管理员角色 |
-| 会话 | 新建会话、切换会话、保存历史消息、删除会话 |
-| 客服 | 订单查询、物流查询、商品搜索、退换货咨询、退款和人工转接 |
-| 知识库 | 查询配送说明、退换货政策和 FAQ |
-| 订单 | 查看订单、创建订单、取消订单、申请退款 |
-| 管理员 | 查看用户、订单、退款、会话和聊天记录 |
-| 部署 | 本地启动或 Docker Compose 启动 |
 
-## 2. 技术栈
+## 能做什么
 
-| 类别 | 技术 | 作用 |
-| --- | --- | --- |
-| 后端 | Python 3.11、FastAPI、Uvicorn | HTTP API 和服务启动 |
-| Agent | OpenAI 兼容 SDK、Pydantic | 调用模型和校验结构化回复 |
-| 工具 | Function Calling、MCP 2.0 | 让模型决定是否调用业务工具 |
-| 知识库 | Markdown、Embedding、JSON 索引 | RAG 文档切片、向量检索 |
-| 数据库 | SQLite | 用户、订单、退款、会话和消息 |
-| 鉴权 | JWT、Argon2 密码哈希 | 登录和接口权限控制 |
-| 前端 | Vue 3、Vite | 用户聊天页面和管理员后台 |
-| 测试 | unittest、FastAPI TestClient、Locust | 接口测试和基础压测 |
-| 部署 | Docker、Docker Compose、Nginx | 容器化运行前后端 |
+- 和 Agent 对话，支持多轮上下文记忆
+- 从配置文件读取 Agent 名称、角色、语气、服务范围和提示词
+- 通过 Markdown 知识库进行 RAG 检索
+- 可选接入 WeKnora 作为外部知识库
+- 通过 Function Calling 调用订单、商品、物流、退款和知识库工具
+- MCP 不可用时自动回退到本地工具
+- 用户注册、登录和 JWT 身份认证
+- 每个用户只能访问自己的会话、订单和 Agent 数据
+- 管理员查看用户、会话、订单、退款和工具调用记录
+- Vue 3 前端聊天页面和管理员页面
+- SQLite 默认保存数据，也保留 PostgreSQL 和 Redis 的配置入口
 
-## 3. 系统架构
+## 默认示例
+
+默认 Agent 是极客商城智能客服“小极”，包含这些演示能力：
+
+- 查询订单
+- 查询物流
+- 搜索商品
+- 咨询退换货和其他商城规则
+- 提交退款申请
+- 转人工客服
+
+项目中的订单、商品和物流数据是演示数据，不连接真实电商平台。
+
+## 工作流程
 
 ```mermaid
-flowchart LR
-    U[浏览器] --> F[Vue 3 前端]
-    F --> A[FastAPI]
-    A --> J[JWT 鉴权]
-    A --> C[EcomAgent]
-    C --> M[OpenAI 兼容模型]
-    C --> T[本地工具]
-    C --> MC[MCP Client]
-    MC --> MS[MCP Server]
-    C --> R[RAG 检索]
-    R --> K[(知识库索引)]
-    C --> D[(SQLite)]
-    A --> D
-    A --> AD[管理员接口]
+flowchart TD
+    A[用户] --> B[Vue 3 前端]
+    B --> C[FastAPI]
+    C --> D[JWT 用户认证]
+    C --> E[Agent Chat]
+    E --> F[读取会话记忆]
+    E --> G[调用模型]
+    G --> H{是否需要工具}
+    H -->|否| I[生成文本回复]
+    H -->|是| J[Function Calling / MCP]
+    J --> K[订单 商品 物流 退款 知识库]
+    K --> G
+    E --> L[SQLite / PostgreSQL]
+    E --> M[RAG 本地索引或 WeKnora]
+    I --> B
 ```
 
-这张图是项目的简化架构，方便快速了解整体组成。完整的文件、模块和依赖关系由 Understand Anything 生成，图谱数据在 [`.ua/knowledge-graph.json`](.ua/knowledge-graph.json)。
+## 技术栈
 
-本地查看交互式图谱：
+- Python 3.11+
+- FastAPI + Uvicorn
+- OpenAI 兼容接口
+- Pydantic Settings
+- SQLite（默认）/ PostgreSQL（可选）
+- Redis（可选，用于共享登录限流）
+- MCP 2.0
+- Vue 3 + Vite
+- uv
+- Docker Compose
 
-```text
-/understand-dashboard C:\Users\Kevin\Desktop\agent\ecom-service-agent-learning
-```
+## 本地启动
 
-### 一次聊天的流程
+需要先安装 Python 3.11+、uv 和 Node.js。
 
-```text
-用户发送问题
-  -> FastAPI 校验 JWT 和请求参数
-  -> EcomAgent 加载当前用户的会话和历史消息
-  -> 模型判断是否需要调用工具
-  -> 调用本地工具、MCP 工具或 RAG
-  -> 工具结果回到模型
-  -> 模型生成客服回复
-  -> 保存会话、消息和摘要到 SQLite
-  -> API 只返回给用户看的纯文本
-```
-
-### 工具调用
-
-本地工具定义在 `agent/tools/registry.py`，当前包括：
-
-- `query_order`：查询订单
-- `query_logistics`：查询物流
-- `search_product`：搜索商品
-- `apply_refund`：申请退款
-- `search_knowledge`：搜索知识库
-
-Agent 启动时会尝试连接 `MCP Server`。如果 MCP 没有启动，Agent 会自动使用本地工具继续运行。当前 MCP Server 示例只暴露了订单查询工具。
-
-## 4. RAG 知识库
-
-知识库文档放在 `knowledge` 目录：
-
-```text
-knowledge/
-├─ FAQ.md
-├─ 配送说明.md
-└─ 退换货政策.md
-```
-
-更新文档后重新生成切片和索引：
-
-```powershell
-uv run python -m agent.rag.chunker
-uv run python -m agent.rag.indexer
-```
-
-处理过程：
-
-```text
-Markdown 文档
-  -> 按标题和 FAQ 问题切片
-  -> 调用 Embedding 模型生成向量
-  -> 保存到 data/index.json
-  -> 用户提问时计算相似度
-  -> 把相关片段交给 Agent
-```
-
-当前使用 JSON 文件和余弦相似度，适合学习和小规模知识库。大型知识库后续可以换成向量数据库。
-
-## 5. 数据库和会话记忆
-
-SQLite 数据库路径：`data/app.db`。
-
-主要数据表：
-
-| 表 | 作用 |
-| --- | --- |
-| `users` | 用户名、密码哈希和角色 |
-| `sessions` | 会话所属用户、标题和摘要 |
-| `messages` | 会话中的用户消息和 Agent 回复 |
-| `orders` | 订单和物流信息 |
-| `refunds` | 退款申请和处理状态 |
-| `products` | 商品、价格、库存和描述 |
-
-每个用户只能读取自己的会话、订单和退款。管理员可以通过后台读取所有用户的会话和聊天记录。
-
-当前订单和商品是学习版模拟数据，启动数据库时会自动初始化。它没有连接真实电商订单系统。
-
-## 6. 环境变量
-
-复制模板：
+在项目根目录执行：
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-然后填写：
-
-| 变量 | 作用 |
-| --- | --- |
-| `OPENAI_API_KEY` | 模型 API Key |
-| `OPENAI_BASE_URL` | OpenAI 官方地址或中转站地址 |
-| `MODEL_NAME` | 聊天模型名称 |
-| `TEMPERATURE` | 模型温度 |
-| `EMBEDDING_MODEL` | RAG 使用的向量模型 |
-| `JWT_SECRET` | JWT 签名密钥 |
-| `MCP_SERVER_URL` | MCP 服务地址，不启动 MCP 时可保持默认值 |
-| `CORS_ORIGINS` | 允许访问后端的前端地址，多个地址用英文逗号分隔 |
-
-`.env`、数据库、会话文件和日志不要上传到 GitHub。
-
-## 7. 本地启动
-
-### 后端
-
-安装依赖：
-
-```powershell
 uv sync
 ```
 
-也可以使用 pip：
+打开 `.env`，至少填写：
 
-```powershell
-pip install -r requirements.txt
+```dotenv
+OPENAI_API_KEY=你的模型接口密钥
+OPENAI_BASE_URL=你的OpenAI兼容接口地址
+MODEL_NAME=你的聊天模型名称
+JWT_SECRET=一串较长的随机字符串
 ```
 
-启动 FastAPI：
+第一次运行建议使用本地知识库：
+
+```dotenv
+KNOWLEDGE_PROVIDER=local
+```
+
+启动后端：
 
 ```powershell
 uv run uvicorn api.main:app --host 127.0.0.1 --port 8765 --reload
 ```
 
-### 前端
-
-新开一个终端：
+另开一个终端启动前端：
 
 ```powershell
 cd frontend
@@ -190,54 +108,40 @@ npm run dev
 
 本地访问：
 
-- 前端：<http://localhost:5173>
-- 后端：<http://127.0.0.1:8765>
-- Swagger：<http://127.0.0.1:8765/docs>
-- 健康检查：<http://127.0.0.1:8765/health>
+- 前端：http://localhost:5173
+- 后端：http://127.0.0.1:8765
+- Swagger：http://127.0.0.1:8765/docs
+- 健康检查：http://127.0.0.1:8765/health
 
-### MCP Server（可选）
+## 创建管理员账号
 
-新开一个终端：
-
-```powershell
-uv run python mcp_server/server.py
-```
-
-MCP 地址：`http://127.0.0.1:9123/mcp`
-
-即使不启动 MCP，Agent 也会回退到本地工具。
-
-### 命令行版本
+管理员不能通过普通注册页面创建。第一次启动项目后，在项目根目录另开一个 PowerShell，执行：
 
 ```powershell
-uv run python main.py
+uv run python -m api.admin_setup
 ```
 
-命令行聊天中可以输入：
+按提示输入管理员用户名和密码。密码输入时不会显示字符，输入完成后直接按回车即可，之后还会要求再次确认密码。
 
-- `reset`：清空当前会话上下文
-- `quit` 或 `exit`：退出程序
+如果用户名已经存在，这个命令会重置密码并把账号提升为管理员；如果不存在，就会创建账号并设置为管理员。
 
-## 8. Docker Compose 启动
+创建完成后，用这个账号在前端登录，会自动进入管理员后台。普通用户登录后只进入客服聊天页面。
 
-先确保根目录已经有 `.env`，然后运行：
+## Docker Compose 启动
+
+先确认根目录存在 `.env`，然后执行：
 
 ```powershell
 docker compose up --build
 ```
 
-Compose 会启动两个服务：
-
-| 服务 | 容器端口 | 本机访问端口 | 作用 |
-| --- | --- | --- | --- |
-| `backend` | 8765 | 8765 | FastAPI 和 Agent |
-| `frontend` | 80 | 8080 | Nginx 托管 Vue 页面 |
-
 访问：
 
-- 用户页面：<http://localhost:8080>
-- 后端健康检查：<http://localhost:8765/health>
-- Swagger：<http://localhost:8765/docs>
+- 前端：http://localhost:8080
+- 后端：http://localhost:8765
+- Swagger：http://localhost:8765/docs
+
+Compose 会启动当前项目的后端和前端。WeKnora、PostgreSQL、Redis 是外部可选服务，不会被这个 Compose 文件自动启动。
 
 停止服务：
 
@@ -245,181 +149,121 @@ Compose 会启动两个服务：
 docker compose down
 ```
 
-`data` 和 `sessions` 会映射到本机目录，容器重建不会自动删除它们。
+## 知识库
 
-## 9. 创建管理员
+### 本地 RAG
 
-运行：
+把 Markdown 文件放进 `knowledge/`，再执行项目中的知识库构建流程，生成切片和向量索引到 `data/`。使用本地知识库时不需要启动 WeKnora。
+
+### WeKnora
+
+如果已经部署 WeKnora，在 `.env` 中填写：
+
+```dotenv
+KNOWLEDGE_PROVIDER=weknora
+WEKNORA_BASE_URL=你的WeKnora地址
+WEKNORA_API_KEY=你的WeKnora密钥
+```
+
+WeKnora 是独立的知识库项目，本项目只通过 API 调用它，不包含 WeKnora 的服务端代码。
+
+## Agent 配置
+
+默认配置在：
+
+```text
+configs/agents/ecommerce.json
+```
+
+可以修改：
+
+- Agent 名称和欢迎语
+- 角色和服务范围
+- 语气
+- 自定义提示词
+- 行为规则和禁止话题
+- 启用的工具
+- 知识库来源
+- 模型名称和温度
+
+Agent 配置由管理员维护。管理员登录后可以配置客服名称、角色、Prompt、知识库、模型和工具；普通用户只能选择公开的 Agent 并进行对话。
+
+管理员接口支持创建新的 Agent：
+
+```text
+POST /admin/agents
+```
+
+可以在 Swagger 页面中调用，具体字段以接口文档为准。
+
+## 主要目录
+
+```text
+agent/              Agent 主循环、记忆、工具和业务逻辑
+agent/business/     订单、商品、退款等业务数据访问
+agent/integrations/ 外部服务适配器，例如 WeKnora 和物流
+agent/rag/          Markdown 切片、向量索引和检索
+agent/tools/        Agent 可调用的工具
+api/                FastAPI 接口、认证和管理员接口
+config/              环境配置和 Agent 配置
+configs/agents/     Agent 配置文件
+frontend/            Vue 3 前端
+knowledge/          Markdown 知识库
+mcp_client/         MCP 客户端示例
+mcp_server/         MCP 服务端示例
+schemas/            请求和响应模型
+tests/              接口、工具、RAG、数据库测试
+docs/               API、RAG、Compose 和学习记录
+```
+
+## 常用 API
+
+- `POST /register`：注册用户
+- `POST /login`：登录并获取 JWT
+- `GET /me`：获取当前用户
+- `POST /chat`：发送消息
+- `GET /sessions`：查看自己的会话
+- `GET /orders`：查看自己的订单
+- `GET /products`：搜索商品
+- `GET /agents`：查看可用 Agent
+- `GET /admin/summary`：管理员统计
+- `GET /admin/sessions`：管理员查看会话
+- `POST /admin/agents/{agent_id}/knowledge`：管理员上传知识库文件
+
+完整接口以 Swagger 为准：`http://127.0.0.1:8765/docs`。
+
+## 测试和检查
+
+执行测试：
 
 ```powershell
-uv run python api/admin_setup.py
+uv run pytest
 ```
 
-按提示输入管理员用户名和密码。管理员登录后会进入管理员后台，可以查看：
-
-- 数据概览
-- 用户列表
-- 订单列表
-- 退款记录
-- 用户会话和聊天内容
-
-## 10. API 接口
-
-需要登录的接口都要携带：
-
-```text
-Authorization: Bearer <JWT>
-```
-
-### 公共接口
-
-```text
-GET  /health
-POST /register
-POST /login
-GET  /products?keyword=外套
-```
-
-### 当前用户接口
-
-```text
-GET  /me
-GET  /orders
-POST /orders
-GET  /orders/{order_id}
-POST /orders/{order_id}/cancel
-GET  /refunds
-POST /orders/{order_id}/refunds
-GET  /sessions
-POST /sessions
-GET  /sessions/{session_id}/messages
-DELETE /sessions/{session_id}
-POST /chat
-```
-
-聊天请求示例：
-
-```json
-{
-  "message": "查询订单 ORD-001",
-  "session_id": "可选的会话 ID"
-}
-```
-
-`/chat` 对外返回纯文本，不会把 `intent`、`confidence`、`requires_human` 等内部字段显示给用户。
-
-### 管理员接口
-
-只有管理员 JWT 可以访问：
-
-```text
-GET /admin/summary
-GET /admin/users
-GET /admin/orders
-GET /admin/refunds
-GET /admin/sessions
-GET /admin/sessions/{session_id}/messages
-```
-
-完整接口记录见 [API接口清单.md](docs/API接口清单.md)，Swagger 地址是 <http://127.0.0.1:8765/docs>。
-
-## 11. 测试
-
-运行全部 Python 测试：
+检查 Compose 配置：
 
 ```powershell
-uv run python -m unittest discover -s tests -v
+docker compose config --quiet
 ```
 
-编译检查：
+## 当前限制
 
-```powershell
-uv run python -m compileall -q api agent config main.py tests
-```
+- 订单、商品、物流和退款默认是演示数据
+- 本项目没有接入真实支付、订单和物流平台
+- 本地 RAG 使用项目内的索引文件，规模较大时应换成专用向量数据库
+- SQLite 适合学习和小规模使用，高并发场景需要重新设计数据库和缓存
+- MCP、WeKnora、PostgreSQL 和 Redis 都是可选能力
+- 当前目标是学习和开源复用，不承诺生产环境的安全性、稳定性和并发能力
 
-构建前端：
+## 相关文档
 
-```powershell
-cd frontend
-npm run build
-```
+- `docs/API接口清单.md`
+- `docs/swagger.md`
+- `docs/Compose启动说明.md`
+- `docs/RAG测试记录.md`
+- `docs/学习记录.md`
+- `docs/项目完善计划.md`
 
-项目已经覆盖登录、会话、聊天纯文本、工具调用、MCP、RAG、订单、退款、管理员权限和异常处理测试。
+## 版本说明
 
-## 12. 基础压测
-
-启动 Locust：
-
-```powershell
-uv run locust -f locustfile.py
-```
-
-打开：<http://localhost:8089>
-
-默认压测健康检查、注册、登录、会话、订单和商品接口，不压测 `/chat`，避免大量消耗真实模型费用。
-
-已有一次 1000 虚拟用户的基础压测结果：
-
-```text
-总请求数：120284
-失败率：约 0.036%
-RPS：约 379.5
-平均响应时间：约 211.74 ms
-P95：约 1100 ms
-```
-
-这只是本地开发环境和 SQLite 的结果，不能代表生产容量。详细记录见 [压测记录.md](docs/压测记录.md)。
-
-## 13. 项目目录
-
-```text
-ecom-service-agent-learning/
-├─ agent/
-│  ├─ chat.py              Agent 主循环、工具调用和记忆
-│  ├─ database.py          SQLite 表结构和数据操作
-│  ├─ presentation.py      清洗对外显示的回复
-│  ├─ summarizer.py        历史消息摘要
-│  ├─ rag/                 文档切片、Embedding 和检索
-│  └─ tools/               订单、物流、商品、退款等工具
-├─ api/
-│  ├─ main.py              FastAPI 接口
-│  ├─ auth.py              注册、登录、JWT 和密码哈希
-│  └─ admin_setup.py       创建或设置管理员
-├─ frontend/
-│  ├─ src/App.vue          用户登录和聊天页面
-│  └─ src/components/      管理员后台
-├─ mcp_client/             MCP 客户端
-├─ mcp_server/             MCP 服务端示例
-├─ prompts/                Agent 系统提示词
-├─ schemas/                结构化回复模型
-├─ knowledge/              RAG 原始 Markdown 文档
-├─ data/                   SQLite 和 RAG 索引
-├─ docs/                   学习、接口、RAG 和压测记录
-├─ tests/                  自动化测试
-├─ Dockerfile              后端镜像
-├─ compose.yaml            前后端 Compose 配置
-├─ .env.example            环境变量模板
-└─ README.md               项目说明
-```
-
-## 14. 当前限制和后续方向
-
-当前版本是电商学习版 `v1.0`：
-
-- 订单、商品和物流是模拟数据
-- MCP 当前只有订单查询示例
-- RAG 使用 JSON 索引和全量余弦相似度搜索
-- 数据库使用 SQLite
-- 没有压测真实模型聊天接口
-- 还没有密码找回、短信验证和生产级审计系统
-
-后续版本可以加入真实业务数据库、向量数据库、Redis、模型聊天压测、多进程部署和更完善的运营监控。
-
-## 15. 相关记录
-
-- [学习记录.md](docs/学习记录.md)：开发过程和每一步的说明
-- [项目完善计划.md](docs/项目完善计划.md)：后续完善方向
-- [API接口清单.md](docs/API接口清单.md)：接口列表
-- [swagger.md](docs/swagger.md)：Swagger 测试记录
-- [RAG测试记录.md](docs/RAG测试记录.md)：知识库检索测试
-- [压测记录.md](docs/压测记录.md)：Locust 压测结果
+`v1.0.0` 是之前的电商客服学习版本；当前分支是在同一项目基础上继续开发的 2.0/2.1 版本。版本区别不影响项目的基本使用方式，具体变化以提交记录和文档为准。

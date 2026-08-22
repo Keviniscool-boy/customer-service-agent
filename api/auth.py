@@ -15,14 +15,20 @@ from config.settings import settings
 password_hash = PasswordHash.recommended()
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+MAX_USERNAME_LENGTH = 64
+MAX_PASSWORD_LENGTH = 128
 
 
 def register_user(username: str, password: str) -> dict:
     username = username.strip()
     if len(username) < 3:
         raise ValueError("用户名至少需要 3 个字符")
+    if len(username) > MAX_USERNAME_LENGTH:
+        raise ValueError("用户名不能超过 64 个字符")
     if len(password) < 6:
         raise ValueError("密码至少需要 6 个字符")
+    if len(password) > MAX_PASSWORD_LENGTH:
+        raise ValueError("密码不能超过 128 个字符")
 
     init_db()
     if get_user_by_username(username):
@@ -33,6 +39,10 @@ def register_user(username: str, password: str) -> dict:
 
 
 def authenticate_user(username: str, password: str) -> dict | None:
+    if len(username.strip()) > MAX_USERNAME_LENGTH:
+        return None
+    if len(password) > MAX_PASSWORD_LENGTH:
+        return None
     init_db()
     user = get_user_by_username(username.strip())
     if not user or not password_hash.verify(password, user["password_hash"]):
@@ -47,6 +57,8 @@ def authenticate_user(username: str, password: str) -> dict | None:
 def reset_user_password(username: str, password: str) -> None:
     if len(password) < 6:
         raise ValueError("密码至少需要 6 个字符")
+    if len(password) > MAX_PASSWORD_LENGTH:
+        raise ValueError("密码不能超过 128 个字符")
 
     init_db()
     if not get_user_by_username(username.strip()):

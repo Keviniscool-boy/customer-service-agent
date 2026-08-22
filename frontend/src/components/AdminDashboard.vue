@@ -20,7 +20,10 @@ const agents = ref([])
 const selectedAgentId = ref(null)
 const agentConfig = ref(null)
 const agentForm = ref(null)
+const creatingAgent = ref(false)
+const createForm = ref(emptyAgentForm())
 const knowledgeStatus = ref(null)
+const agentVersions = ref([])
 const knowledgeFile = ref(null)
 const knowledgeLoading = ref(false)
 const selectedSession = ref(null)
@@ -35,6 +38,37 @@ const pageTitle = computed(() => ({
   agents: 'Agent 与知识库',
   conversations: '对话记录',
 }[activeTab.value]))
+
+function emptyAgentForm() {
+  return {
+    agent_id: '',
+    name: '',
+    role: '',
+    welcome_message: '',
+    tone: '友好、清晰、简洁',
+    knowledge_provider: 'local',
+    knowledge_base_id: '',
+    knowledge_base_path: '',
+    model_name: '',
+    temperature: '',
+    service_scope: '',
+    custom_prompt: '',
+    behavior_rules: '',
+    forbidden_topics: '',
+    enabled_tools: 'search_knowledge',
+  }
+}
+
+function beginCreateAgent() {
+  creatingAgent.value = true
+  createForm.value = emptyAgentForm()
+  error.value = ''
+}
+
+function cancelCreateAgent() {
+  creatingAgent.value = false
+  createForm.value = emptyAgentForm()
+}
 
 async function getAdminData(path) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -93,11 +127,13 @@ async function refresh() {
 async function loadKnowledgeStatus() {
   if (!selectedAgentId.value) return
   try {
-    const [statusData, configData] = await Promise.all([
+    const [statusData, configData, versionsData] = await Promise.all([
       getAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`),
       getAdminData(`/admin/agents/${selectedAgentId.value}`),
+      getAdminData(`/admin/agents/${selectedAgentId.value}/versions`),
     ])
     knowledgeStatus.value = statusData
+    agentVersions.value = versionsData.versions || []
     agentConfig.value = configData.agent
     agentForm.value = {
       name: agentConfig.value.name,
@@ -105,6 +141,11 @@ async function loadKnowledgeStatus() {
       welcome_message: agentConfig.value.welcome_message,
       tone: agentConfig.value.tone,
       service_scope: agentConfig.value.service_scope.join('\n'),
+      custom_prompt: agentConfig.value.custom_prompt || '',
+      behavior_rules: (agentConfig.value.behavior_rules || []).join('\n'),
+      forbidden_topics: (agentConfig.value.forbidden_topics || []).join('\n'),
+      knowledge_provider: agentConfig.value.knowledge_provider || 'local',
+      knowledge_base_id: agentConfig.value.knowledge_base_id || '',
       knowledge_base_path: agentConfig.value.knowledge_base_path,
       enabled_tools: agentConfig.value.enabled_tools.join(', '),
       model_name: agentConfig.value.model_name || '',
@@ -112,6 +153,38 @@ async function loadKnowledgeStatus() {
     }
   } catch (requestError) {
     error.value = requestError.message
+  }
+}
+
+async function restoreAgentVersion(version) {
+  if (!selectedAgentId.value) return
+  if (!window.confirm(`确定恢复到配置版本 v${version} 吗？当前配置会保留为新版本。`)) return
+  knowledgeLoading.value = true
+  error.value = ''
+  try {
+    await sendAdminData(
+      `/admin/agents/${selectedAgentId.value}/versions/${version}/restore`,
+      { method: 'POST' },
+    )
+    await loadKnowledgeStatus()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+async function waitForKnowledgeReady(filename) {
+  if (!selectedAgentId.value || !filename) return
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    await loadKnowledgeStatus()
+    const status = knowledgeStatus.value
+    if (status?.provider !== 'weknora') return
+    const document = (status.documents || []).find(
+      (item) => (item.file_name || item.title) === filename,
+    )
+    if (document?.parse_status === 'completed' || document?.parse_status === 'failed') return
+    await new Promise((resolve) => window.setTimeout(resolve, 2000))
   }
 }
 
@@ -127,12 +200,60 @@ async function saveAgentConfig() {
         ...agentConfig.value,
         ...agentForm.value,
         service_scope: agentForm.value.service_scope.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
+        custom_prompt: agentForm.value.custom_prompt.trim(),
+        behavior_rules: agentForm.value.behavior_rules.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
+        forbidden_topics: agentForm.value.forbidden_topics.split(/[,\n]/).map((item) => item.trim()).filter(Boolean),
         enabled_tools: agentForm.value.enabled_tools.split(',').map((item) => item.trim()).filter(Boolean),
         model_name: agentForm.value.model_name.trim() || null,
         temperature: agentForm.value.temperature === '' ? null : Number(agentForm.value.temperature),
       }),
     })
     await refresh()
+  } catch (requestError) {
+    error.value = requestError.message
+  } finally {
+    knowledgeLoading.value = false
+  }
+}
+
+async function createAgent() {
+  const form = createForm.value
+  if (!form.agent_id.trim() || !form.name.trim() || !form.role.trim()) {
+    error.value = '请填写 Agent ID、名称和角色。'
+    return
+  }
+
+  knowledgeLoading.value = true
+  error.value = ''
+  try {
+    const agentId = form.agent_id.trim()
+    const data = await sendAdminData('/admin/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agent_id: agentId,
+        owner_user_id: null,
+        is_public: true,
+        name: form.name.trim(),
+        role: form.role.trim(),
+        welcome_message: form.welcome_message.trim() || '您好，我可以帮您解答问题。',
+        tone: form.tone.trim() || '友好、清晰、简洁',
+        service_scope: form.service_scope.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+        custom_prompt: form.custom_prompt.trim(),
+        behavior_rules: form.behavior_rules.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+        forbidden_topics: form.forbidden_topics.split(/[\n,]/).map((item) => item.trim()).filter(Boolean),
+        knowledge_provider: form.knowledge_provider,
+        knowledge_base_id: form.knowledge_base_id.trim() || null,
+        knowledge_base_path: form.knowledge_base_path.trim() || `data/knowledge/${agentId}`,
+        enabled_tools: form.enabled_tools.split(',').map((item) => item.trim()).filter(Boolean),
+        model_name: form.model_name.trim() || null,
+        temperature: form.temperature === '' ? null : Number(form.temperature),
+      }),
+    })
+    creatingAgent.value = false
+    await refresh()
+    selectedAgentId.value = data.agent.agent_id
+    await loadKnowledgeStatus()
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -151,12 +272,12 @@ async function uploadKnowledge() {
   try {
     const formData = new FormData()
     formData.append('file', knowledgeFile.value)
-    await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`, {
+    const data = await sendAdminData(`/admin/agents/${selectedAgentId.value}/knowledge`, {
       method: 'POST',
       body: formData,
     })
     knowledgeFile.value = null
-    await loadKnowledgeStatus()
+    await waitForKnowledgeReady(data.filename)
   } catch (requestError) {
     error.value = requestError.message
   } finally {
@@ -222,7 +343,7 @@ onMounted(refresh)
       <div class="sidebar-brand">
         <div class="small-mark">极</div>
         <div>
-          <strong>小极后台</strong>
+          <strong>Agent 管理后台</strong>
           <span>运营管理中心</span>
         </div>
       </div>
@@ -277,21 +398,57 @@ onMounted(refresh)
         <div class="section-heading">
           <div>
             <h2>Agent 知识库</h2>
-            <p class="section-hint">上传 Markdown 后会自动切片并重建索引。</p>
+            <p class="section-hint">管理员配置客服身份、提示词和知识库，顾客只负责提问。</p>
           </div>
+          <button class="refresh-button" type="button" @click="beginCreateAgent">新建 Agent</button>
           <select v-model="selectedAgentId" class="admin-select" @change="loadKnowledgeStatus">
             <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">{{ agent.name }}</option>
           </select>
         </div>
+        <form v-if="creatingAgent" class="agent-config-form" @submit.prevent="createAgent">
+          <label>Agent ID<input v-model="createForm.agent_id" placeholder="只能使用字母、数字、下划线和短横线" /></label>
+          <label>名称<input v-model="createForm.name" placeholder="例如：售后客服" /></label>
+          <label>角色<input v-model="createForm.role" placeholder="这个客服负责什么" /></label>
+          <label>欢迎语<input v-model="createForm.welcome_message" placeholder="顾客打开对话时看到的内容" /></label>
+          <label>语气<input v-model="createForm.tone" /></label>
+          <label>知识库服务
+            <select v-model="createForm.knowledge_provider">
+              <option value="local">本地 RAG</option>
+              <option value="weknora">WeKnora</option>
+            </select>
+          </label>
+          <label>知识库目录<input v-model="createForm.knowledge_base_path" placeholder="留空自动生成" /></label>
+          <label>模型名称<input v-model="createForm.model_name" placeholder="留空使用全局模型" /></label>
+          <label>温度<input v-model="createForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
+          <label class="wide-field">服务范围<textarea v-model="createForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+          <label class="wide-field">自定义 Prompt<textarea v-model="createForm.custom_prompt" rows="5" placeholder="定义客服的工作方式"></textarea></label>
+          <label class="wide-field">行为规则<textarea v-model="createForm.behavior_rules" rows="3" placeholder="每行一条规则"></textarea></label>
+          <label class="wide-field">禁止主题<textarea v-model="createForm.forbidden_topics" rows="3" placeholder="每行一个不处理的主题"></textarea></label>
+          <label class="wide-field">启用工具<textarea v-model="createForm.enabled_tools" rows="2" placeholder="多个工具用英文逗号分隔"></textarea></label>
+          <div class="wide-field form-actions">
+            <button class="refresh-button" type="submit" :disabled="knowledgeLoading">创建 Agent</button>
+            <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="cancelCreateAgent">取消</button>
+          </div>
+        </form>
         <div v-if="agentForm" class="agent-config-form">
           <label>名称<input v-model="agentForm.name" /></label>
           <label>角色<input v-model="agentForm.role" /></label>
           <label>欢迎语<input v-model="agentForm.welcome_message" /></label>
           <label>语气<input v-model="agentForm.tone" /></label>
+          <label>知识库服务
+            <select v-model="agentForm.knowledge_provider">
+              <option value="weknora">WeKnora</option>
+              <option value="local">本地 RAG（备用）</option>
+            </select>
+          </label>
+          <label>WeKnora 知识库 ID<input v-model="agentForm.knowledge_base_id" placeholder="留空后首次上传时自动创建" /></label>
           <label>知识库目录<input v-model="agentForm.knowledge_base_path" /></label>
           <label>模型名称<input v-model="agentForm.model_name" placeholder="留空使用全局模型" /></label>
           <label>温度<input v-model="agentForm.temperature" type="number" min="0" max="2" step="0.1" placeholder="留空使用全局温度" /></label>
           <label class="wide-field">服务范围<textarea v-model="agentForm.service_scope" rows="3" placeholder="每行一个服务范围"></textarea></label>
+          <label class="wide-field">自定义 Prompt<textarea v-model="agentForm.custom_prompt" rows="5" placeholder="定义这个 Agent 的工作方式"></textarea></label>
+          <label class="wide-field">行为规则<textarea v-model="agentForm.behavior_rules" rows="3" placeholder="每行一条规则"></textarea></label>
+          <label class="wide-field">禁止主题<textarea v-model="agentForm.forbidden_topics" rows="3" placeholder="每行一个不处理的主题"></textarea></label>
           <label class="wide-field">启用工具<textarea v-model="agentForm.enabled_tools" rows="2" placeholder="多个工具用英文逗号分隔"></textarea></label>
           <div class="wide-field form-actions"><button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="saveAgentConfig">保存 Agent 配置</button></div>
         </div>
@@ -302,7 +459,7 @@ onMounted(refresh)
           </label>
           <button class="refresh-button" type="button" :disabled="knowledgeLoading || !knowledgeFile" @click="uploadKnowledge">{{ knowledgeLoading ? '处理中...' : '上传并索引' }}</button>
           <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="rebuildKnowledge">重建索引</button>
-          <span class="index-state">{{ knowledgeStatus.index_ready ? '索引已就绪' : '索引未就绪' }}</span>
+          <span class="index-state">{{ knowledgeStatus.index_ready ? '索引已就绪' : knowledgeStatus.provider === 'weknora' ? 'WeKnora 解析中' : '索引未就绪' }}</span>
         </div>
         <div v-if="knowledgeStatus?.files?.length" class="knowledge-files">
           <div v-for="filename in knowledgeStatus.files" :key="filename" class="knowledge-file">
@@ -310,7 +467,19 @@ onMounted(refresh)
             <button type="button" :disabled="knowledgeLoading" @click="deleteKnowledge(filename)">删除</button>
           </div>
         </div>
-        <p v-else class="empty-cell">当前 Agent 还没有 Markdown 知识库文件。</p>
+        <div class="agent-versions">
+          <div class="knowledge-manager-heading">
+            <div><h3>配置版本</h3><p>每次保存都会保留快照，最多保留最近 20 个版本。</p></div>
+          </div>
+          <div v-if="agentVersions.length" class="agent-version-list">
+            <div v-for="item in agentVersions" :key="item.version" class="agent-version-item">
+              <span>v{{ item.version }} · {{ item.created_at }}</span>
+              <button class="refresh-button" type="button" :disabled="knowledgeLoading" @click="restoreAgentVersion(item.version)">恢复</button>
+            </div>
+          </div>
+          <p v-else class="empty-cell">还没有配置版本。</p>
+        </div>
+        <p v-if="!knowledgeStatus?.files?.length" class="empty-cell">当前 Agent 还没有 Markdown 知识库文件。</p>
       </section>
 
       <section v-else-if="activeTab === 'conversations'" class="conversation-layout">

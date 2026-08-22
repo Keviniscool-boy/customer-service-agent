@@ -7,8 +7,11 @@ from pydantic import ValidationError
 
 from config.agent_config import (
     AgentConfig,
+    create_agent_config_version,
     get_default_ecom_agent_config,
+    list_agent_config_versions,
     list_agent_config_paths,
+    load_agent_config_version,
     load_agent_config_by_id,
     load_agent_configs,
     load_agent_config,
@@ -126,6 +129,9 @@ class AgentConfigTest(unittest.TestCase):
             welcome_message="你好",
             tone="简洁",
             service_scope=["咨询"],
+            custom_prompt="先给结论，再给步骤。",
+            behavior_rules=["不确定时说明原因"],
+            forbidden_topics=["医疗诊断"],
             knowledge_base_path="knowledge/saved-agent",
         )
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -133,6 +139,29 @@ class AgentConfigTest(unittest.TestCase):
             loaded = load_agent_config(path)
 
         self.assertEqual(loaded, config)
+
+    def test_config_versions_keep_history_and_can_be_loaded(self):
+        config = AgentConfig(
+            agent_id="versioned-agent",
+            name="版本助手",
+            role="通用助手",
+            welcome_message="你好",
+            tone="简洁",
+            service_scope=["咨询"],
+            knowledge_base_path="knowledge/versioned-agent",
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            version_dir = Path(temp_dir) / "versions"
+            first = create_agent_config_version(config, version_dir)
+            updated = config.model_copy(update={"name": "更新后的版本助手"})
+            second = create_agent_config_version(updated, version_dir)
+
+            versions = list_agent_config_versions("versioned-agent", version_dir)
+            loaded = load_agent_config_version("versioned-agent", second["version"], version_dir)
+
+        self.assertEqual(first["version"], 1)
+        self.assertEqual([item["version"] for item in versions], [2, 1])
+        self.assertEqual(loaded.name, "更新后的版本助手")
 
     def test_agent_id_rejects_path_like_value(self):
         with self.assertRaises(ValidationError):

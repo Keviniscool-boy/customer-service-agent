@@ -49,6 +49,15 @@ class ToolRegistryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.registry.register(self.definition, lambda: None)
 
+    def test_confirmation_policy_can_be_registered(self):
+        self.registry.register(
+            self.definition,
+            lambda: None,
+            confirmation_required=True,
+        )
+
+        self.assertTrue(self.registry.requires_confirmation("demo_tool"))
+
 
 if __name__ == "__main__":
     unittest.main()

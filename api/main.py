@@ -1,5 +1,7 @@
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.encoders import jsonable_encoder
@@ -10,7 +12,9 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
 from agent.chat import EcomAgent
+from agent.integrations.weknora import WeKnoraClient, WeKnoraError
 from agent.presentation import visible_reply
+from agent.tools.registry import get_default_registry
 from agent.rag.knowledge_base import (
     DEFAULT_MAX_FILE_BYTES,
     build_knowledge_index,
@@ -26,6 +30,7 @@ from agent.database import (
     load_messages,
     list_orders_for_user,
     list_refunds_for_user,
+    list_tool_audits,
     session_belongs_to_user,
     transition_order_status,
 )
@@ -35,18 +40,41 @@ from api.auth import (
     decode_access_token,
     register_user,
 )
+from api.rate_limit import create_login_rate_limiter
 from config.settings import settings
 from config.agent_config import (
     AgentConfig,
     PROJECT_ROOT,
+    get_default_ecom_agent_config,
     load_agent_config_by_id,
+    list_agent_config_versions,
+    load_agent_config_version,
     load_agent_configs,
     save_agent_config,
 )
+from prompts.builder import build_system_prompt
 
 
-app = FastAPI(title="Ecom Service Agent")
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        init_db()
+    except Exception as error:
+        logger.exception("数据库初始化失败")
+        raise RuntimeError(
+            "数据库初始化失败，请检查 DATABASE_BACKEND、POSTGRES_DSN 和数据库服务"
+        ) from error
+    yield
+
+
+app = FastAPI(title="Ecom Service Agent", lifespan=lifespan)
+login_rate_limiter = create_login_rate_limiter(
+    settings.redis_url,
+    settings.redis_timeout_seconds,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -78,6 +106,8 @@ async def http_exception_handler(
         401: "UNAUTHORIZED",
         403: "FORBIDDEN",
         404: "NOT_FOUND",
+        429: "TOO_MANY_REQUESTS",
+        503: "SERVICE_UNAVAILABLE",
     }
     code = code_by_status.get(exc.status_code, "HTTP_ERROR")
     if isinstance(exc.detail, str):
@@ -126,8 +156,8 @@ async def unhandled_exception_handler(
 
 
 class Credentials(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=3, max_length=64)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class ChatRequest(BaseModel):
@@ -141,6 +171,27 @@ class SessionCreateRequest(BaseModel):
     agent_id: str = "ecom-default"
 
 
+class UserAgentConfigRequest(BaseModel):
+    agent_id: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$",
+    )
+    name: str = Field(min_length=1, max_length=100)
+    role: str = Field(min_length=1, max_length=500)
+    welcome_message: str = Field(min_length=1, max_length=1000)
+    tone: str = Field(min_length=1, max_length=500)
+    service_scope: list[str] = Field(min_length=1)
+    custom_prompt: str = Field(default="", max_length=4000)
+    behavior_rules: list[str] = Field(default_factory=list, max_length=20)
+    forbidden_topics: list[str] = Field(default_factory=list, max_length=20)
+    enabled_tools: list[str] = Field(default_factory=list)
+    knowledge_provider: Literal["local", "weknora"] = "local"
+    knowledge_base_id: str | None = Field(default=None, max_length=100)
+    model_name: str | None = None
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
+
+
 class OrderCreateRequest(BaseModel):
     product_name: str = Field(min_length=1)
     amount: float = Field(gt=0)
@@ -152,14 +203,25 @@ class RefundCreateRequest(BaseModel):
     reason: str = Field(min_length=1)
 
 
-@app.on_event("startup")
-def startup():
-    init_db()
-
-
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    connection = None
+    try:
+        connection = get_connection()
+        connection.execute("SELECT 1 AS ok").fetchone()
+    except Exception as error:
+        logger.exception("数据库健康检查失败")
+        raise HTTPException(
+            status_code=503,
+            detail="数据库暂时不可用，请检查数据库配置和服务状态",
+        ) from error
+    finally:
+        if connection is not None:
+            connection.close()
+    return {
+        "status": "ok",
+        "database_backend": settings.database_backend,
+    }
 
 
 @app.get("/products")
@@ -179,15 +241,35 @@ def register(credentials: Credentials):
 
 
 @app.post("/login")
-def login(credentials: Credentials):
+def login(credentials: Credentials, request: Request):
+    client_host = request.client.host if request.client else "unknown"
+    attempt_key = f"{client_host}:{credentials.username.strip().lower()}"
+    if login_rate_limiter.is_blocked(attempt_key):
+        retry_after = login_rate_limiter.retry_after(attempt_key)
+        raise HTTPException(
+            status_code=429,
+            detail="登录失败次数过多，请稍后重试",
+            headers={"Retry-After": str(retry_after)},
+        )
+
     user = authenticate_user(credentials.username, credentials.password)
     if not user:
+        login_rate_limiter.record_failure(attempt_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
         )
+    login_rate_limiter.record_success(attempt_key)
+    try:
+        access_token = create_access_token(user)
+    except RuntimeError as error:
+        logger.exception("登录令牌生成失败")
+        raise HTTPException(
+            status_code=503,
+            detail="认证服务暂时不可用，请联系管理员",
+        ) from error
     return {
-        "access_token": create_access_token(user),
+        "access_token": access_token,
         "token_type": "bearer",
         "user": user,
     }
@@ -213,6 +295,12 @@ def get_current_user(
         if user is None:
             raise ValueError("用户不存在")
         return user
+    except RuntimeError as error:
+        logger.exception("认证服务配置错误")
+        raise HTTPException(
+            status_code=503,
+            detail="认证服务暂时不可用，请联系管理员",
+        ) from error
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -228,9 +316,82 @@ def require_admin(user: dict = Depends(get_current_user)) -> dict:
 
 def get_agent_config(agent_id: str):
     try:
+        if agent_id == "ecom-default":
+            return get_default_ecom_agent_config()
         return load_agent_config_by_id(agent_id)
     except KeyError as error:
         raise HTTPException(status_code=404, detail="Agent 不存在") from error
+    except (FileNotFoundError, ValueError) as error:
+        logger.exception("Agent 配置加载失败：%s", agent_id)
+        raise HTTPException(
+            status_code=503,
+            detail="Agent 配置暂时不可用，请联系管理员",
+        ) from error
+
+
+def get_user_agent_config(agent_id: str, user: dict):
+    """只返回当前用户有权使用的 Agent，避免泄露私有 Agent 是否存在。"""
+
+    config = get_agent_config(agent_id)
+    if user.get("role") != "admin" and not config.is_public:
+        raise HTTPException(status_code=404, detail="Agent 不存在")
+    return config
+
+
+def public_agent_payload(config: AgentConfig) -> dict:
+    """只向顾客返回选择客服和聊天所需的公开信息。"""
+
+    return {
+        "agent_id": config.agent_id,
+        "name": config.name,
+        "role": config.role,
+        "welcome_message": config.welcome_message,
+        "service_scope": config.service_scope,
+        "is_public": config.is_public,
+    }
+
+
+def build_agent_prompt_preview(agent_config: AgentConfig) -> dict:
+    registry = get_default_registry(
+        agent_config.knowledge_base_path,
+        agent_config.knowledge_provider,
+        agent_config.knowledge_base_id,
+    )
+    definitions = registry.get_definitions(set(agent_config.enabled_tools))
+    return {
+        "agent_id": agent_config.agent_id,
+        "prompt": build_system_prompt(agent_config, definitions),
+        "tool_names": [
+            tool.get("function", {}).get("name")
+            for tool in definitions
+            if tool.get("function", {}).get("name")
+        ],
+    }
+
+
+def validate_agent_owner(config: AgentConfig) -> None:
+    if config.owner_user_id and get_user_by_id(config.owner_user_id) is None:
+        raise HTTPException(status_code=400, detail="Agent 归属用户不存在")
+    if not config.is_public and not config.owner_user_id:
+        raise HTTPException(
+            status_code=400,
+            detail="私有 Agent 必须指定归属用户",
+        )
+
+
+def knowledge_build_http_exception(error: Exception) -> HTTPException:
+    """把索引错误转换成用户能理解的 HTTP 错误，并保留服务端日志。"""
+
+    logger.exception("知识库索引失败", exc_info=error)
+    if isinstance(error, (FileNotFoundError, ValueError, UnicodeDecodeError)):
+        return HTTPException(
+            status_code=400,
+            detail="知识库内容无效，请检查 Markdown 文件",
+        )
+    return HTTPException(
+        status_code=503,
+        detail="知识库索引服务暂时不可用，请稍后重试",
+    )
 
 
 def get_agent_knowledge_paths(agent_config):
@@ -255,6 +416,130 @@ def get_agent_knowledge_paths(agent_config):
     return source_dir, source_dir / "chunks.json", source_dir / "index.json"
 
 
+def get_weknora_client() -> WeKnoraClient:
+    return WeKnoraClient(
+        settings.weknora_base_url,
+        settings.weknora_api_key,
+        settings.weknora_timeout_seconds,
+    )
+
+
+def weknora_http_exception(error: WeKnoraError) -> HTTPException:
+    logger.exception("WeKnora 知识库请求失败")
+    if "HTTP 404" in str(error):
+        status_code = 404
+    elif "HTTP 409" in str(error):
+        status_code = 409
+    else:
+        status_code = 502
+    return HTTPException(
+        status_code=status_code,
+        detail=f"WeKnora 知识库服务调用失败：{error}",
+    )
+
+
+def weknora_knowledge_status(agent_id: str, agent_config: AgentConfig) -> dict:
+    knowledge_base_id = agent_config.knowledge_base_id
+    if not knowledge_base_id:
+        return {
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": None,
+            "files": [],
+            "documents": [],
+            "index_ready": False,
+        }
+
+    try:
+        documents = get_weknora_client().list_knowledge(knowledge_base_id)
+    except WeKnoraError as error:
+        raise weknora_http_exception(error) from error
+
+    return {
+        "agent_id": agent_id,
+        "provider": "weknora",
+        "knowledge_base_id": knowledge_base_id,
+        "files": [
+            document.get("file_name") or document.get("title", "")
+            for document in documents
+            if isinstance(document, dict)
+        ],
+        "documents": documents,
+        "index_ready": bool(documents)
+        and all(
+            document.get("parse_status") == "completed"
+            for document in documents
+            if isinstance(document, dict)
+        ),
+    }
+
+
+async def upload_weknora_knowledge(
+    agent_id: str,
+    agent_config: AgentConfig,
+    file: UploadFile,
+) -> dict:
+    filename = Path(file.filename or "").name
+    if not filename or filename != file.filename:
+        raise HTTPException(status_code=400, detail="文件名无效")
+    if Path(filename).suffix.lower() != ".md":
+        raise HTTPException(status_code=400, detail="只支持上传 .md 文件")
+
+    content = await file.read(DEFAULT_MAX_FILE_BYTES + 1)
+    if len(content) > DEFAULT_MAX_FILE_BYTES:
+        raise HTTPException(status_code=400, detail="知识库文件不能超过 2 MB")
+    try:
+        content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise HTTPException(status_code=400, detail="文件必须使用 UTF-8 编码") from error
+
+    client = get_weknora_client()
+    knowledge_base_id = agent_config.knowledge_base_id
+    if not knowledge_base_id:
+        if not settings.weknora_embedding_model_id:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "未配置 WEKNORA_EMBEDDING_MODEL_ID，"
+                    "无法自动创建 WeKnora 知识库"
+                ),
+            )
+        try:
+            embedding_model_id = client.resolve_embedding_model_id(
+                settings.weknora_embedding_model_id
+            )
+            knowledge_base = client.create_knowledge_base(
+                f"{agent_config.name}知识库",
+                description=f"{agent_config.name}的 WeKnora 知识库",
+                embedding_model_id=embedding_model_id,
+            )
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        knowledge_base_id = knowledge_base["id"]
+        agent_config = agent_config.model_copy(
+            update={"knowledge_base_id": knowledge_base_id}
+        )
+        try:
+            save_agent_config(agent_config, overwrite=True)
+        except OSError as error:
+            raise HTTPException(status_code=500, detail="Agent 配置保存失败") from error
+
+    try:
+        knowledge = client.upload_markdown(knowledge_base_id, filename, content)
+    except WeKnoraError as error:
+        raise weknora_http_exception(error) from error
+
+    return {
+        "success": True,
+        "agent_id": agent_id,
+        "provider": "weknora",
+        "knowledge_base_id": knowledge_base_id,
+        "knowledge_id": knowledge.get("id"),
+        "filename": filename,
+        "parse_status": knowledge.get("parse_status", "pending"),
+    }
+
+
 @app.get("/me")
 def me(user: dict = Depends(get_current_user)):
     return {"user": user}
@@ -265,16 +550,77 @@ def list_agents(user: dict = Depends(get_current_user)):
     configs = load_agent_configs()
     return {
         "agents": [
-            {
-                "agent_id": config.agent_id,
-                "name": config.name,
-                "role": config.role,
-                "welcome_message": config.welcome_message,
-                "service_scope": config.service_scope,
-            }
+            public_agent_payload(config)
             for config in configs.values()
+            if (
+                user.get("role") == "admin"
+                or config.is_public
+            )
         ]
     }
+
+
+@app.post("/agents")
+def create_user_agent(
+    request: UserAgentConfigRequest,
+    user: dict = Depends(get_current_user),
+):
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
+
+
+@app.get("/agents/{agent_id}")
+def user_agent_detail(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    config = get_user_agent_config(agent_id, user)
+    return {"agent": public_agent_payload(config)}
+
+
+@app.get("/agents/{agent_id}/prompt-preview")
+def user_agent_prompt_preview(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    raise HTTPException(status_code=403, detail="Prompt 只能由管理员查看")
+
+
+def agent_config_versions(agent_id: str, user: dict):
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
+
+
+@app.get("/agents/{agent_id}/versions")
+def user_agent_versions(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    return agent_config_versions(agent_id, user)
+
+
+@app.post("/agents/{agent_id}/versions/{version}/restore")
+def restore_user_agent_version(
+    agent_id: str,
+    version: int,
+    user: dict = Depends(get_current_user),
+):
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
+
+
+@app.put("/agents/{agent_id}")
+def update_user_agent(
+    agent_id: str,
+    request: UserAgentConfigRequest,
+    user: dict = Depends(get_current_user),
+):
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
+
+
+@app.delete("/agents/{agent_id}")
+def delete_user_agent(
+    agent_id: str,
+    user: dict = Depends(get_current_user),
+):
+    raise HTTPException(status_code=403, detail="Agent 配置只能由管理员维护")
 
 
 @app.get("/admin/agents/{agent_id}")
@@ -285,11 +631,49 @@ def admin_agent_detail(
     return {"agent": get_agent_config(agent_id).model_dump()}
 
 
+@app.get("/admin/agents/{agent_id}/prompt-preview")
+def admin_agent_prompt_preview(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    return build_agent_prompt_preview(get_agent_config(agent_id))
+
+
+@app.get("/admin/agents/{agent_id}/versions")
+def admin_agent_versions(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    get_agent_config(agent_id)
+    try:
+        return {"agent_id": agent_id, "versions": list_agent_config_versions(agent_id)}
+    except ValueError as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本暂时不可用") from error
+
+
+@app.post("/admin/agents/{agent_id}/versions/{version}/restore")
+def restore_admin_agent_version(
+    agent_id: str,
+    version: int,
+    user: dict = Depends(require_admin),
+):
+    get_agent_config(agent_id)
+    try:
+        restored = load_agent_config_version(agent_id, version)
+        save_agent_config(restored, overwrite=True)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Agent 配置版本不存在") from error
+    except (OSError, ValueError) as error:
+        raise HTTPException(status_code=503, detail="Agent 配置版本恢复失败") from error
+    return {"agent": restored.model_dump(), "restored_version": version}
+
+
 @app.post("/admin/agents")
 def create_agent_config(
     config: AgentConfig,
     user: dict = Depends(require_admin),
 ):
+    validate_agent_owner(config)
     try:
         save_agent_config(config)
     except FileExistsError as error:
@@ -305,6 +689,7 @@ def update_agent_config(
 ):
     if config.agent_id != agent_id:
         raise HTTPException(status_code=400, detail="Agent ID 不能修改")
+    validate_agent_owner(config)
     try:
         save_agent_config(config, overwrite=True)
     except OSError as error:
@@ -330,6 +715,9 @@ def knowledge_status(
     user: dict = Depends(require_admin),
 ):
     agent_config = get_agent_config(agent_id)
+    if agent_config.knowledge_provider == "weknora":
+        return weknora_knowledge_status(agent_id, agent_config)
+
     source_dir, _, index_path = get_agent_knowledge_paths(agent_config)
     files = (
         sorted(path.name for path in source_dir.glob("*.md"))
@@ -350,6 +738,9 @@ async def upload_knowledge(
     user: dict = Depends(require_admin),
 ):
     agent_config = get_agent_config(agent_id)
+    if agent_config.knowledge_provider == "weknora":
+        return await upload_weknora_knowledge(agent_id, agent_config, file)
+
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     filename = Path(file.filename or "").name
     if not filename or filename != file.filename:
@@ -376,10 +767,7 @@ async def upload_knowledge(
         result = build_knowledge_index(source_dir, chunks_path, index_path)
     except Exception as error:
         target_path.unlink(missing_ok=True)
-        raise HTTPException(
-            status_code=400,
-            detail="知识库索引生成失败，请检查文件内容或模型配置",
-        ) from error
+        raise knowledge_build_http_exception(error) from error
 
     return {
         "success": True,
@@ -396,14 +784,40 @@ def rebuild_knowledge(
     user: dict = Depends(require_admin),
 ):
     agent_config = get_agent_config(agent_id)
+    if agent_config.knowledge_provider == "weknora":
+        if not agent_config.knowledge_base_id:
+            return {
+                "success": True,
+                "agent_id": agent_id,
+                "provider": "weknora",
+                "knowledge_base_id": None,
+                "reparsed_count": 0,
+                "message": "当前 Agent 还没有 WeKnora 知识库",
+            }
+        client = get_weknora_client()
+        try:
+            documents = client.list_knowledge(agent_config.knowledge_base_id)
+            reparsed = [
+                client.reparse_knowledge(document["id"])
+                for document in documents
+                if isinstance(document, dict) and document.get("id")
+            ]
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": agent_config.knowledge_base_id,
+            "reparsed_count": len(reparsed),
+            "message": "WeKnora 已提交重新解析任务",
+        }
+
     source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     try:
         result = build_knowledge_index(source_dir, chunks_path, index_path)
     except Exception as error:
-        raise HTTPException(
-            status_code=400,
-            detail="知识库重建失败，请检查文件内容或模型配置",
-        ) from error
+        raise knowledge_build_http_exception(error) from error
     return {
         "success": True,
         "agent_id": agent_id,
@@ -419,10 +833,40 @@ def delete_knowledge_file(
     user: dict = Depends(require_admin),
 ):
     agent_config = get_agent_config(agent_id)
-    source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
     safe_filename = Path(filename).name
     if safe_filename != filename or Path(filename).suffix.lower() != ".md":
         raise HTTPException(status_code=400, detail="文件名无效")
+    if agent_config.knowledge_provider == "weknora":
+        if not agent_config.knowledge_base_id:
+            raise HTTPException(status_code=404, detail="WeKnora 知识库不存在")
+        client = get_weknora_client()
+        try:
+            documents = client.list_knowledge(agent_config.knowledge_base_id)
+            matched = next(
+                (
+                    document
+                    for document in documents
+                    if isinstance(document, dict)
+                    and (document.get("file_name") or document.get("title"))
+                    == safe_filename
+                ),
+                None,
+            )
+            if not matched or not matched.get("id"):
+                raise HTTPException(status_code=404, detail="知识库文件不存在")
+            client.delete_knowledge(matched["id"])
+        except WeKnoraError as error:
+            raise weknora_http_exception(error) from error
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "provider": "weknora",
+            "knowledge_base_id": agent_config.knowledge_base_id,
+            "knowledge_id": matched["id"],
+            "filename": safe_filename,
+        }
+
+    source_dir, chunks_path, index_path = get_agent_knowledge_paths(agent_config)
 
     target_path = source_dir / safe_filename
     if not target_path.is_file():
@@ -440,10 +884,9 @@ def delete_knowledge_file(
             result = {"file_count": 0, "chunk_count": 0}
     except Exception as error:
         target_path.write_bytes(original_content)
-        raise HTTPException(
-            status_code=400,
-            detail="删除后重建索引失败，已恢复原文件",
-        ) from error
+        mapped_error = knowledge_build_http_exception(error)
+        mapped_error.detail = f"{mapped_error.detail}，已恢复原文件"
+        raise mapped_error from error
 
     return {
         "success": True,
@@ -452,6 +895,40 @@ def delete_knowledge_file(
         "file_count": result["file_count"],
         "chunk_count": result["chunk_count"],
     }
+
+
+@app.get("/agents/{agent_id}/knowledge")
+def user_knowledge_status(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    return knowledge_status(agent_id, user)
+
+
+@app.post("/agents/{agent_id}/knowledge")
+async def user_upload_knowledge(
+    agent_id: str,
+    file: UploadFile = File(...),
+    user: dict = Depends(require_admin),
+):
+    return await upload_knowledge(agent_id, file, user)
+
+
+@app.post("/agents/{agent_id}/knowledge/rebuild")
+def user_rebuild_knowledge(
+    agent_id: str,
+    user: dict = Depends(require_admin),
+):
+    return rebuild_knowledge(agent_id, user)
+
+
+@app.delete("/agents/{agent_id}/knowledge/{filename}")
+def user_delete_knowledge_file(
+    agent_id: str,
+    filename: str,
+    user: dict = Depends(require_admin),
+):
+    return delete_knowledge_file(agent_id, filename, user)
 
 
 @app.get("/admin/users")
@@ -561,6 +1038,13 @@ def admin_session_messages(
     return {"messages": messages}
 
 
+@app.get("/admin/tool-audits")
+def admin_tool_audits(user: dict = Depends(require_admin)):
+    """管理员查看学习版工具调用记录。"""
+
+    return {"audits": list_tool_audits()}
+
+
 @app.get("/orders")
 def list_orders(user: dict = Depends(get_current_user)):
     return {"orders": list_orders_for_user(user["id"])}
@@ -665,7 +1149,7 @@ def create_new_session(
     request: SessionCreateRequest,
     user: dict = Depends(get_current_user),
 ):
-    get_agent_config(request.agent_id)
+    get_user_agent_config(request.agent_id, user)
     session_id = create_session(
         user["id"],
         request.title,
@@ -712,11 +1196,18 @@ def remove_session(session_id: str, user: dict = Depends(get_current_user)):
 
 @app.post("/chat")
 def chat(request: ChatRequest, user: dict = Depends(get_current_user)):
-    agent_config = get_agent_config(request.agent_id)
-    agent = EcomAgent(
-        user_id=user["id"],
-        session_id=request.session_id,
-        agent_config=agent_config,
-    )
+    agent_config = get_user_agent_config(request.agent_id, user)
+    try:
+        agent = EcomAgent(
+            user_id=user["id"],
+            session_id=request.session_id,
+            agent_config=agent_config,
+        )
+    except (FileNotFoundError, OSError, ValueError) as error:
+        logger.exception("Agent 初始化失败：%s", request.agent_id)
+        raise HTTPException(
+            status_code=503,
+            detail="Agent 暂时不可用，请检查知识库索引和配置",
+        ) from error
     response = agent.chat(request.message)
     return PlainTextResponse(content=visible_reply(response.reply))

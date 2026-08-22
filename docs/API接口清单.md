@@ -64,7 +64,7 @@ POST   /chat
 GET    /me
 ```
 
-`/agents` 返回当前配置目录中的 Agent。创建会话或聊天时可以传 `agent_id`，不传时使用 `ecom-default`。
+`/agents` 只返回公开客服 Agent 的基本信息。普通用户只能选择客服、创建会话和聊天，Agent 配置、Prompt、版本和知识库由管理员维护。创建会话或聊天时可以传 `agent_id`，不传时使用 `ecom-default`。
 
 聊天请求：
 
@@ -97,15 +97,23 @@ GET /admin/summary
 GET /admin/agents/{agent_id}
 POST /admin/agents
 PUT /admin/agents/{agent_id}
+GET /admin/agents/{agent_id}/versions
+POST /admin/agents/{agent_id}/versions/{version}/restore
 GET /admin/users
 GET /admin/orders
 GET /admin/refunds
 GET /admin/sessions
 GET /admin/sessions/{session_id}/messages
+GET /admin/tool-audits
 GET /admin/agents/{agent_id}/knowledge
 POST /admin/agents/{agent_id}/knowledge
 POST /admin/agents/{agent_id}/knowledge/rebuild
 DELETE /admin/agents/{agent_id}/knowledge/{filename}
 ```
 
+配置版本接口只返回版本号和时间，不直接返回完整 Prompt。恢复版本会生成新的当前版本，不会覆盖历史快照。Agent 配置和知识库均由管理员维护，普通用户只能使用公开 Agent。
+
 上传知识库使用 `multipart/form-data`，字段名是 `file`，目前只支持 UTF-8 编码的 `.md` 文件，单个文件最大 2 MB。
+
+`/admin/tool-audits` 返回最近的工具调用记录，包括用户、Agent、工具名、参数、结果和状态。
+退款在聊天中如果没有用户明确确认，会记录为 `awaiting_confirmation`，不会真正创建退款。

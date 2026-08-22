@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -76,6 +77,144 @@ class APIErrorsTest(unittest.TestCase):
                             },
                         },
                     )
+            finally:
+                database.DB_PATH = original_path
+
+    def test_chat_agent_initialization_failure_returns_service_unavailable(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "agent-init-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    login = client.post(
+                        "/login",
+                        json={
+                            "username": "agent-init-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    headers = {
+                        "Authorization": f"Bearer {login.json()['access_token']}"
+                    }
+
+                    with patch(
+                        "api.main.EcomAgent",
+                        side_effect=FileNotFoundError("index missing"),
+                    ):
+                        response = client.post(
+                            "/chat",
+                            json={"message": "你好"},
+                            headers=headers,
+                        )
+
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(
+                    response.json()["error"]["code"],
+                    "SERVICE_UNAVAILABLE",
+                )
+                self.assertEqual(
+                    response.json()["error"]["message"],
+                    "Agent 暂时不可用，请检查知识库索引和配置",
+                )
+            finally:
+                database.DB_PATH = original_path
+
+    def test_login_configuration_failure_returns_service_unavailable(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "login-config-error-user",
+                            "password": "secret123",
+                        },
+                    )
+                    with patch(
+                        "api.main.create_access_token",
+                        side_effect=RuntimeError("JWT_SECRET missing"),
+                    ):
+                        response = client.post(
+                            "/login",
+                            json={
+                                "username": "login-config-error-user",
+                                "password": "secret123",
+                            },
+                        )
+
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(
+                    response.json()["error"]["code"],
+                    "SERVICE_UNAVAILABLE",
+                )
+                self.assertEqual(
+                    response.json()["error"]["message"],
+                    "认证服务暂时不可用，请联系管理员",
+                )
+            finally:
+                database.DB_PATH = original_path
+
+    def test_oversized_credentials_are_rejected(self):
+        response = TestClient(app).post(
+            "/register",
+            json={
+                "username": "a" * 65,
+                "password": "secret123",
+            },
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
+
+    def test_repeated_login_failures_are_rate_limited(self):
+        original_path = database.DB_PATH
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            database.DB_PATH = Path(temp_dir) / "app.db"
+            try:
+                with TestClient(app) as client:
+                    client.post(
+                        "/register",
+                        json={
+                            "username": "rate-limit-user",
+                            "password": "secret123",
+                        },
+                    )
+                    for _ in range(5):
+                        response = client.post(
+                            "/login",
+                            json={
+                                "username": "rate-limit-user",
+                                "password": "wrong-password",
+                            },
+                        )
+                        self.assertEqual(response.status_code, 401)
+
+                    response = client.post(
+                        "/login",
+                        json={
+                            "username": "rate-limit-user",
+                            "password": "wrong-password",
+                        },
+                    )
+
+                self.assertEqual(response.status_code, 429)
+                self.assertEqual(
+                    response.json()["error"]["code"],
+                    "TOO_MANY_REQUESTS",
+                )
+                self.assertIn("Retry-After", response.headers)
             finally:
                 database.DB_PATH = original_path
 

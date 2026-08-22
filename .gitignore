@@ -2,6 +2,8 @@
 .venv/
 data/app.db
 data/*.bak
+data/agent_versions/
+data/knowledge/
 sessions/
 __pycache__/
 *.log

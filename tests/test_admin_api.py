@@ -71,6 +71,7 @@ class AdminAPITest(unittest.TestCase):
                         "/admin/users",
                         "/admin/orders",
                         "/admin/refunds",
+                        "/admin/tool-audits",
                     ):
                         response = client.get(path, headers=admin_headers)
                         self.assertEqual(response.status_code, 200)

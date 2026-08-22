@@ -7,6 +7,38 @@ from config.settings import settings
 
 
 DB_PATH = Path(settings.database_path)
+DATABASE_BACKEND = settings.database_backend
+
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:  # pragma: no cover - only needed for PostgreSQL mode
+    psycopg = None
+    dict_row = None
+
+
+class DatabaseConnection:
+    """让现有业务 SQL 同时适配 SQLite 和 PostgreSQL。"""
+
+    def __init__(self, connection, backend: str):
+        self._connection = connection
+        self.backend = backend
+
+    def execute(self, query: str, params=()):
+        if self.backend == "postgres":
+            query = query.replace("?", "%s")
+        return self._connection.execute(query, params)
+
+    def executemany(self, query: str, params):
+        if self.backend == "postgres":
+            query = query.replace("?", "%s")
+        return self._connection.executemany(query, params)
+
+    def commit(self):
+        self._connection.commit()
+
+    def close(self):
+        self._connection.close()
 
 ORDER_STATUS_TRANSITIONS = {
     "待发货": {"已发货", "已取消"},
@@ -18,6 +50,16 @@ ORDER_STATUS_TRANSITIONS = {
 
 
 def get_connection():
+    if DATABASE_BACKEND == "postgres":
+        if psycopg is None:
+            raise RuntimeError("PostgreSQL 模式需要安装 psycopg[binary]")
+        if not settings.postgres_dsn.strip():
+            raise RuntimeError("PostgreSQL 模式没有配置 POSTGRES_DSN")
+        return DatabaseConnection(
+            psycopg.connect(settings.postgres_dsn, row_factory=dict_row),
+            "postgres",
+        )
+
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(DB_PATH, timeout=10)
@@ -26,7 +68,24 @@ def get_connection():
     connection.execute("PRAGMA busy_timeout = 5000")
     connection.execute("PRAGMA journal_mode = WAL")
     connection.execute("PRAGMA synchronous = NORMAL")
-    return connection
+    return DatabaseConnection(connection, "sqlite")
+
+
+def _table_columns(connection: DatabaseConnection, table_name: str) -> set[str]:
+    if DATABASE_BACKEND == "postgres":
+        rows = connection.execute(
+            """
+            SELECT column_name AS name
+            FROM information_schema.columns
+            WHERE table_schema = current_schema() AND table_name = ?
+            """,
+            (table_name,),
+        ).fetchall()
+    else:
+        rows = connection.execute(
+            f"PRAGMA table_info({table_name})"
+        ).fetchall()
+    return {row["name"] for row in rows}
 
 def init_db():
     connection = get_connection()
@@ -43,10 +102,15 @@ def init_db():
         )
             """
         )
+    message_id = (
+        "BIGSERIAL PRIMARY KEY"
+        if DATABASE_BACKEND == "postgres"
+        else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    )
     connection.execute(
-            """
-            CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        f"""
+        CREATE TABLE IF NOT EXISTS messages (
+            id {message_id},
             session_id TEXT NOT NULL,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -54,8 +118,8 @@ def init_db():
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
-            """
-        )
+        """
+    )
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -67,10 +131,7 @@ def init_db():
         )
         """
     )
-    user_columns = {
-        row["name"]
-        for row in connection.execute("PRAGMA table_info(users)")
-    }
+    user_columns = _table_columns(connection, "users")
     if "role" not in user_columns:
         connection.execute(
             "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'"
@@ -114,10 +175,27 @@ def init_db():
         )
         """
     )
-    session_columns = {
-        row["name"]
-        for row in connection.execute("PRAGMA table_info(sessions)")
-    }
+    audit_id = (
+        "BIGSERIAL PRIMARY KEY"
+        if DATABASE_BACKEND == "postgres"
+        else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    )
+    connection.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS tool_audits (
+            id {audit_id},
+            user_id TEXT,
+            session_id TEXT,
+            agent_id TEXT,
+            tool_name TEXT NOT NULL,
+            arguments_json TEXT NOT NULL,
+            result_json TEXT NOT NULL,
+            status TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    session_columns = _table_columns(connection, "sessions")
     if "agent_id" not in session_columns:
         connection.execute(
             "ALTER TABLE sessions ADD COLUMN agent_id TEXT NOT NULL DEFAULT 'ecom-default'"
@@ -125,10 +203,7 @@ def init_db():
     if "title" not in session_columns:
         connection.execute("ALTER TABLE sessions ADD COLUMN title TEXT")
 
-    columns = {
-        row["name"]
-        for row in connection.execute("PRAGMA table_info(messages)")
-    }
+    columns = _table_columns(connection, "messages")
     if "message_json" not in columns:
         connection.execute("ALTER TABLE messages ADD COLUMN message_json TEXT")
     connection.execute(
@@ -146,10 +221,7 @@ def init_db():
     order_count = connection.execute(
         "SELECT COUNT(*) AS count FROM orders"
     ).fetchone()["count"]
-    order_columns = {
-        row["name"]
-        for row in connection.execute("PRAGMA table_info(orders)")
-    }
+    order_columns = _table_columns(connection, "orders")
     if "user_id" not in order_columns:
         connection.execute("ALTER TABLE orders ADD COLUMN user_id TEXT")
     if order_count == 0:
@@ -627,6 +699,62 @@ def update_summary(session_id: str, summary: str | None) -> None:
 
     connection.commit()
     connection.close()
+
+
+def record_tool_audit(
+    *,
+    user_id: str | None,
+    session_id: str | None,
+    agent_id: str | None,
+    tool_name: str,
+    arguments: dict,
+    result: object,
+    status: str,
+) -> None:
+    """保存一次工具调用记录，供学习版管理员查看。"""
+
+    connection = get_connection()
+    connection.execute(
+        """
+        INSERT INTO tool_audits (
+            user_id, session_id, agent_id, tool_name,
+            arguments_json, result_json, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            user_id,
+            session_id,
+            agent_id,
+            tool_name,
+            json.dumps(arguments, ensure_ascii=False),
+            result if isinstance(result, str) else json.dumps(
+                result,
+                ensure_ascii=False,
+            ),
+            status,
+        ),
+    )
+    connection.commit()
+    connection.close()
+
+
+def list_tool_audits(limit: int = 100) -> list[dict]:
+    connection = get_connection()
+    rows = connection.execute(
+        """
+        SELECT tool_audits.id, tool_audits.user_id, tool_audits.session_id,
+               tool_audits.agent_id, tool_audits.tool_name,
+               tool_audits.arguments_json, tool_audits.result_json,
+               tool_audits.status, tool_audits.created_at, users.username
+        FROM tool_audits
+        LEFT JOIN users ON users.id = tool_audits.user_id
+        ORDER BY tool_audits.id DESC
+        LIMIT ?
+        """,
+        (max(1, min(limit, 500)),),
+    ).fetchall()
+    connection.close()
+    return [dict(row) for row in rows]
 
 
 def delete_session(session_id: str) -> None:
