@@ -73,6 +73,17 @@ FastAPI
 2. 在 WeKnora 中配置模型并创建 API Key
 3. 配置本项目 .env
 4. 启动本项目的 PostgreSQL、Redis、后端和前端
+
+MCP Server 也是独立进程，默认不由本项目 Compose 启动。需要使用 MCP 工具时，在项目根目录另开一个终端执行：
+
+```powershell
+uv run python mcp_server/server.py
+```
+
+MCP 地址为 `http://127.0.0.1:9123/mcp`。如果使用本项目 Docker Compose，后端会通过
+`http://host.docker.internal:9123/mcp` 访问宿主机上的 MCP Server。
+
+不启动 MCP 也可以运行项目。Agent 连接失败时会自动回退到本地业务工具，并在后端日志中提示回退状态。
 ```
 
 ### 1. 启动 WeKnora

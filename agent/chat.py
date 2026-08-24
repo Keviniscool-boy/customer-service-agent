@@ -292,7 +292,18 @@ class EcomAgent:
             if result is None:
                 raise ValueError("模型没有返回结构化结果")
         except Exception as error:
-            return self._model_fallback(error, message_count_before_chat)
+            logger.warning(
+                "结构化回复解析失败，保留普通文本回复：%s",
+                type(error).__name__,
+            )
+            if not final_text:
+                return self._model_fallback(error, message_count_before_chat)
+            result = CustomerServiceResponse(
+                intent=IntentType.OTHER,
+                confidence=0.0,
+                reply=final_text,
+                requires_human=False,
+            )
 
         result = self._handle_handoff(result)
 

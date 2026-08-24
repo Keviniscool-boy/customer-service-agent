@@ -1061,7 +1061,7 @@ def admin_sessions(user: dict = Depends(require_admin)):
         FROM sessions
         LEFT JOIN users ON users.id = sessions.user_id
         LEFT JOIN messages ON messages.session_id = sessions.id
-        GROUP BY sessions.id
+        GROUP BY sessions.id, users.username
         ORDER BY sessions.updated_at DESC, sessions.created_at DESC
         """
     ).fetchall()
