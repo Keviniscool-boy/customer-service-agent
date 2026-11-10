@@ -551,6 +551,7 @@ def cancel_pending_order_and_create_refund(
             """,
             (refund_id,),
         ).fetchone()
+        connection.close()
         return dict(result)
     except Exception:
         try:
