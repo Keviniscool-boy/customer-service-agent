@@ -2,7 +2,10 @@ import json
 
 
 def visible_reply(value: str | None) -> str:
-    """Extract the user-facing text from a possibly structured model reply."""
+    """从可能带结构的模型回复中提取用户真正能看的文本。
+
+    模型偶尔会把整段结构化数据原样返回，直接展示会把内部字段泄露给用户。
+    """
     if not isinstance(value, str):
         return ""
 
