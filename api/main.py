@@ -100,9 +100,7 @@ chat_rate_limiter = create_request_rate_limiter(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        origin.strip()
-        for origin in settings.cors_origins.split(",")
-        if origin.strip()
+        origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -561,7 +559,9 @@ async def upload_weknora_knowledge(
     try:
         content.decode("utf-8")
     except UnicodeDecodeError as error:
-        raise HTTPException(status_code=400, detail="文件必须使用 UTF-8 编码") from error
+        raise HTTPException(
+            status_code=400, detail="文件必须使用 UTF-8 编码"
+        ) from error
 
     client = get_weknora_client()
     knowledge_base_id = agent_config.knowledge_base_id
@@ -570,8 +570,7 @@ async def upload_weknora_knowledge(
             raise HTTPException(
                 status_code=503,
                 detail=(
-                    "未配置 WEKNORA_EMBEDDING_MODEL_ID，"
-                    "无法自动创建 WeKnora 知识库"
+                    "未配置 WEKNORA_EMBEDDING_MODEL_ID，无法自动创建 WeKnora 知识库"
                 ),
             )
         try:
@@ -622,10 +621,7 @@ def list_agents(user: dict = Depends(get_current_user)):
         "agents": [
             public_agent_payload(config)
             for config in configs.values()
-            if (
-                user.get("role") == "admin"
-                or config.is_public
-            )
+            if (user.get("role") == "admin" or config.is_public)
         ]
     }
 
@@ -718,7 +714,9 @@ def admin_agent_versions(
     try:
         return {"agent_id": agent_id, "versions": list_agent_config_versions(agent_id)}
     except ValueError as error:
-        raise HTTPException(status_code=503, detail="Agent 配置版本暂时不可用") from error
+        raise HTTPException(
+            status_code=503, detail="Agent 配置版本暂时不可用"
+        ) from error
 
 
 @app.post("/admin/agents/{agent_id}/versions/{version}/restore")
@@ -824,7 +822,9 @@ async def upload_knowledge(
     try:
         content.decode("utf-8")
     except UnicodeDecodeError as error:
-        raise HTTPException(status_code=400, detail="文件必须使用 UTF-8 编码") from error
+        raise HTTPException(
+            status_code=400, detail="文件必须使用 UTF-8 编码"
+        ) from error
 
     source_dir.mkdir(parents=True, exist_ok=True)
     target_path = source_dir / filename
@@ -1250,8 +1250,7 @@ def list_session_messages(
             ),
         }
         for message in load_messages(session_id)
-        if message.get("role") in {"user", "assistant"}
-        and message.get("content")
+        if message.get("role") in {"user", "assistant"} and message.get("content")
     ]
     return {"messages": messages}
 

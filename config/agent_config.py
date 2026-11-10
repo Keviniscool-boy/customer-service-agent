@@ -48,8 +48,7 @@ def get_default_ecom_agent_config() -> AgentConfig:
 
     config = load_agent_config(DEFAULT_AGENT_CONFIG_PATH)
     knowledge_base_id = (
-        settings.weknora_knowledge_base_id.strip()
-        or config.knowledge_base_id
+        settings.weknora_knowledge_base_id.strip() or config.knowledge_base_id
     )
     return config.model_copy(
         update={
@@ -160,11 +159,7 @@ def create_agent_config_version(
     version_directory = _agent_version_directory(config.agent_id, directory)
     version_directory.mkdir(parents=True, exist_ok=True)
     version_paths = sorted(version_directory.glob("*.json"))
-    version_numbers = [
-        int(path.stem)
-        for path in version_paths
-        if path.stem.isdigit()
-    ]
+    version_numbers = [int(path.stem) for path in version_paths if path.stem.isdigit()]
     version = max(version_numbers, default=0) + 1
     snapshot = {
         "version": version,

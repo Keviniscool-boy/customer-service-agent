@@ -1,6 +1,5 @@
 """工具权限和确认规则。"""
 
-
 CONFIRMATION_REQUIRED_TOOLS = {"apply_refund"}
 
 

@@ -29,9 +29,7 @@ class AdminAPITest(unittest.TestCase):
                         if username == "normal-user":
                             normal_user_id = registered.json()["user"]["id"]
 
-                    self.assertTrue(
-                        database.set_user_role("admin-user", "admin")
-                    )
+                    self.assertTrue(database.set_user_role("admin-user", "admin"))
                     session_id = database.create_session(
                         normal_user_id,
                         "订单咨询",

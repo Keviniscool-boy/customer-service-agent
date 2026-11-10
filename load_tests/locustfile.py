@@ -50,9 +50,7 @@ class AuthenticatedUser(HttpUser):
         if accounts:
             account = accounts[next(_account_sequence) % len(accounts)]
             self.username = account["username"]
-            self.headers = {
-                "Authorization": f"Bearer {account['token']}"
-            }
+            self.headers = {"Authorization": f"Bearer {account['token']}"}
             self.session_id = account["session_id"]
             return
 

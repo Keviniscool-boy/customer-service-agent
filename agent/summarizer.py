@@ -13,8 +13,7 @@ SUMMARY_PROMPT = """
 
 def summarize(client, model, old_messages, previous_summary=None):
     history_text = "\n".join(
-        f"{message['role']}: {message['content']}"
-        for message in old_messages
+        f"{message['role']}: {message['content']}" for message in old_messages
     )
 
     previous_summary = previous_summary or "暂无历史摘要"

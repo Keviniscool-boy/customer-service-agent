@@ -190,9 +190,7 @@ def main() -> int:
     results_dir = Path(sys.argv[1])
     metadata = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
     report_path = Path(sys.argv[3])
-    stage_by_prefix = {
-        stage["prefix"]: stage for stage in metadata.get("stages", [])
-    }
+    stage_by_prefix = {stage["prefix"]: stage for stage in metadata.get("stages", [])}
 
     summaries = []
     for stats_path in sorted(results_dir.glob("*_stats.csv")):

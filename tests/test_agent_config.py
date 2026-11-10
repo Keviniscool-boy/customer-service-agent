@@ -111,12 +111,8 @@ class AgentConfigTest(unittest.TestCase):
         }
         with tempfile.TemporaryDirectory() as temp_dir:
             config_dir = Path(temp_dir)
-            (config_dir / "one.json").write_text(
-                json.dumps(payload), encoding="utf-8"
-            )
-            (config_dir / "two.json").write_text(
-                json.dumps(payload), encoding="utf-8"
-            )
+            (config_dir / "one.json").write_text(json.dumps(payload), encoding="utf-8")
+            (config_dir / "two.json").write_text(json.dumps(payload), encoding="utf-8")
 
             with self.assertRaises(ValueError):
                 load_agent_configs(config_dir)
@@ -157,7 +153,9 @@ class AgentConfigTest(unittest.TestCase):
             second = create_agent_config_version(updated, version_dir)
 
             versions = list_agent_config_versions("versioned-agent", version_dir)
-            loaded = load_agent_config_version("versioned-agent", second["version"], version_dir)
+            loaded = load_agent_config_version(
+                "versioned-agent", second["version"], version_dir
+            )
 
         self.assertEqual(first["version"], 1)
         self.assertEqual([item["version"] for item in versions], [2, 1])

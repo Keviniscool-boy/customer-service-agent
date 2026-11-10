@@ -42,6 +42,7 @@ class DatabaseConnection:
     def close(self):
         self._connection.close()
 
+
 ORDER_STATUS_TRANSITIONS = {
     "待发货": {"已发货", "已取消"},
     "已发货": {"运输中"},
@@ -84,10 +85,9 @@ def _table_columns(connection: DatabaseConnection, table_name: str) -> set[str]:
             (table_name,),
         ).fetchall()
     else:
-        rows = connection.execute(
-            f"PRAGMA table_info({table_name})"
-        ).fetchall()
+        rows = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
     return {row["name"] for row in rows}
+
 
 def init_db():
     connection = get_connection()
@@ -97,7 +97,7 @@ def init_db():
         else "TEXT DEFAULT CURRENT_TIMESTAMP"
     )
     connection.execute(
-            f"""
+        f"""
             CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -108,7 +108,7 @@ def init_db():
             updated_at {timestamp_column}
         )
             """
-        )
+    )
     message_id = (
         "BIGSERIAL PRIMARY KEY"
         if DATABASE_BACKEND == "postgres"
@@ -235,9 +235,9 @@ def init_db():
         ON messages (session_id, id)
         """
     )
-    order_count = connection.execute(
-        "SELECT COUNT(*) AS count FROM orders"
-    ).fetchone()["count"]
+    order_count = connection.execute("SELECT COUNT(*) AS count FROM orders").fetchone()[
+        "count"
+    ]
     order_columns = _table_columns(connection, "orders")
     if "user_id" not in order_columns:
         connection.execute("ALTER TABLE orders ADD COLUMN user_id TEXT")
@@ -594,9 +594,7 @@ def transition_order_status(
     current_status = row["status"]
     if new_status not in ORDER_STATUS_TRANSITIONS.get(current_status, set()):
         connection.close()
-        raise ValueError(
-            f"订单 {order_id} 不能从“{current_status}”变为“{new_status}”"
-        )
+        raise ValueError(f"订单 {order_id} 不能从“{current_status}”变为“{new_status}”")
 
     connection.execute(
         "UPDATE orders SET status = ? WHERE order_id = ? AND user_id = ?",
@@ -667,6 +665,7 @@ def load_summary(session_id: str) -> str | None:
     connection.close()
     return row["summary"] if row else None
 
+
 def save_message(session_id: str, message: dict) -> None:
     connection = get_connection()
     connection.execute(
@@ -707,9 +706,7 @@ def load_messages(session_id: str) -> list[dict]:
         if row["message_json"]:
             messages.append(json.loads(row["message_json"]))
         else:
-            messages.append(
-                {"role": row["role"], "content": row["content"]}
-            )
+            messages.append({"role": row["role"], "content": row["content"]})
     return messages
 
 
@@ -794,7 +791,9 @@ def record_tool_audit(
             agent_id,
             tool_name,
             json.dumps(arguments, ensure_ascii=False),
-            result if isinstance(result, str) else json.dumps(
+            result
+            if isinstance(result, str)
+            else json.dumps(
                 result,
                 ensure_ascii=False,
             ),

@@ -48,12 +48,15 @@ class KnowledgeAPITest(unittest.TestCase):
             try:
                 with TestClient(app) as client:
                     headers = self.login_as_admin(client)
-                    with patch(
-                        "api.main.get_agent_knowledge_paths",
-                        return_value=(source_dir, chunks_path, index_path),
-                    ), patch(
-                        "api.main.build_knowledge_index",
-                        return_value={"file_count": 1, "chunk_count": 2},
+                    with (
+                        patch(
+                            "api.main.get_agent_knowledge_paths",
+                            return_value=(source_dir, chunks_path, index_path),
+                        ),
+                        patch(
+                            "api.main.build_knowledge_index",
+                            return_value={"file_count": 1, "chunk_count": 2},
+                        ),
                     ):
                         response = client.post(
                             "/admin/agents/ecom-default/knowledge",
@@ -87,7 +90,9 @@ class KnowledgeAPITest(unittest.TestCase):
                     )
 
                 self.assertEqual(response.status_code, 400)
-                self.assertEqual(response.json()["error"]["message"], "只支持上传 .md 文件")
+                self.assertEqual(
+                    response.json()["error"]["message"], "只支持上传 .md 文件"
+                )
             finally:
                 database.DB_PATH = original_path
 
@@ -101,12 +106,15 @@ class KnowledgeAPITest(unittest.TestCase):
             try:
                 with TestClient(app) as client:
                     headers = self.login_as_admin(client)
-                    with patch(
-                        "api.main.get_agent_knowledge_paths",
-                        return_value=(source_dir, chunks_path, index_path),
-                    ), patch(
-                        "api.main.build_knowledge_index",
-                        side_effect=RuntimeError("embedding service unavailable"),
+                    with (
+                        patch(
+                            "api.main.get_agent_knowledge_paths",
+                            return_value=(source_dir, chunks_path, index_path),
+                        ),
+                        patch(
+                            "api.main.build_knowledge_index",
+                            side_effect=RuntimeError("embedding service unavailable"),
+                        ),
                     ):
                         response = client.post(
                             "/admin/agents/ecom-default/knowledge",
@@ -170,11 +178,17 @@ class KnowledgeAPITest(unittest.TestCase):
                         "parse_status": "pending",
                     }
                     config = self.weknora_config()
-                    with patch("api.main.get_agent_config", return_value=config), patch(
-                        "api.main.get_weknora_client", return_value=weknora_client
-                    ), patch(
-                        "api.main.settings.weknora_embedding_model_id", "embedding-1"
-                    ), patch("api.main.save_agent_config") as save_mock:
+                    with (
+                        patch("api.main.get_agent_config", return_value=config),
+                        patch(
+                            "api.main.get_weknora_client", return_value=weknora_client
+                        ),
+                        patch(
+                            "api.main.settings.weknora_embedding_model_id",
+                            "embedding-1",
+                        ),
+                        patch("api.main.save_agent_config") as save_mock,
+                    ):
                         response = client.post(
                             "/admin/agents/ecom-default/knowledge",
                             headers=headers,
@@ -205,13 +219,20 @@ class KnowledgeAPITest(unittest.TestCase):
                     headers = self.login_as_admin(client)
                     weknora_client = MagicMock()
                     weknora_client.list_knowledge.return_value = [
-                        {"id": "doc-1", "file_name": "faq.md", "parse_status": "completed"}
+                        {
+                            "id": "doc-1",
+                            "file_name": "faq.md",
+                            "parse_status": "completed",
+                        }
                     ]
-                    with patch(
-                        "api.main.get_agent_config",
-                        return_value=self.weknora_config("kb-1"),
-                    ), patch(
-                        "api.main.get_weknora_client", return_value=weknora_client
+                    with (
+                        patch(
+                            "api.main.get_agent_config",
+                            return_value=self.weknora_config("kb-1"),
+                        ),
+                        patch(
+                            "api.main.get_weknora_client", return_value=weknora_client
+                        ),
                     ):
                         response = client.get(
                             "/admin/agents/ecom-default/knowledge",
@@ -239,11 +260,14 @@ class KnowledgeAPITest(unittest.TestCase):
                         "id": "doc-1",
                         "parse_status": "pending",
                     }
-                    with patch(
-                        "api.main.get_agent_config",
-                        return_value=self.weknora_config("kb-1"),
-                    ), patch(
-                        "api.main.get_weknora_client", return_value=weknora_client
+                    with (
+                        patch(
+                            "api.main.get_agent_config",
+                            return_value=self.weknora_config("kb-1"),
+                        ),
+                        patch(
+                            "api.main.get_weknora_client", return_value=weknora_client
+                        ),
                     ):
                         response = client.post(
                             "/admin/agents/ecom-default/knowledge/rebuild",
@@ -265,13 +289,20 @@ class KnowledgeAPITest(unittest.TestCase):
                     headers = self.login_as_admin(client)
                     weknora_client = MagicMock()
                     weknora_client.list_knowledge.return_value = [
-                        {"id": "doc-1", "file_name": "faq.md", "parse_status": "completed"}
+                        {
+                            "id": "doc-1",
+                            "file_name": "faq.md",
+                            "parse_status": "completed",
+                        }
                     ]
-                    with patch(
-                        "api.main.get_agent_config",
-                        return_value=self.weknora_config("kb-1"),
-                    ), patch(
-                        "api.main.get_weknora_client", return_value=weknora_client
+                    with (
+                        patch(
+                            "api.main.get_agent_config",
+                            return_value=self.weknora_config("kb-1"),
+                        ),
+                        patch(
+                            "api.main.get_weknora_client", return_value=weknora_client
+                        ),
                     ):
                         response = client.delete(
                             "/admin/agents/ecom-default/knowledge/faq.md",
@@ -297,13 +328,16 @@ class KnowledgeAPITest(unittest.TestCase):
             try:
                 with TestClient(app) as client:
                     headers = self.login_as_admin(client)
-                    with patch(
-                        "api.main.get_agent_knowledge_paths",
-                        return_value=(source_dir, chunks_path, index_path),
-                    ), patch(
-                        "api.main.build_knowledge_index",
-                        return_value={"file_count": 1, "chunk_count": 1},
-                    ) as build_mock:
+                    with (
+                        patch(
+                            "api.main.get_agent_knowledge_paths",
+                            return_value=(source_dir, chunks_path, index_path),
+                        ),
+                        patch(
+                            "api.main.build_knowledge_index",
+                            return_value={"file_count": 1, "chunk_count": 1},
+                        ) as build_mock,
+                    ):
                         rebuilt = client.post(
                             "/admin/agents/ecom-default/knowledge/rebuild",
                             headers=headers,

@@ -64,9 +64,7 @@ class MCPClient:
                         await session.initialize()
                         self.session = session
                         tools_result = await session.list_tools()
-                        self.tool_definitions = mcp_tools_to_openai(
-                            tools_result.tools
-                        )
+                        self.tool_definitions = mcp_tools_to_openai(tools_result.tools)
                         self.connected.set()
                         await self.close_event.wait()
         except Exception as error:
@@ -78,7 +76,9 @@ class MCPClient:
     def call_tool(self, name: str, arguments: dict) -> str:
         """调用 MCP 工具，返回 JSON 字符串。"""
         if not self.session or not self.loop:
-            return json.dumps({"success": False, "error": "MCP 未连接"}, ensure_ascii=False)
+            return json.dumps(
+                {"success": False, "error": "MCP 未连接"}, ensure_ascii=False
+            )
 
         future = asyncio.run_coroutine_threadsafe(
             self.session.call_tool(name, arguments),

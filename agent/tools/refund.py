@@ -60,8 +60,7 @@ def apply_refund(
             "refund_id": refund["refund_id"],
             "status": refund["status"],
             "message": (
-                f"订单 {order_id} 还未发货，已取消订单并申请退款。"
-                f"退款原因：{reason}"
+                f"订单 {order_id} 还未发货，已取消订单并申请退款。退款原因：{reason}"
             ),
         }
 
@@ -78,7 +77,6 @@ def apply_refund(
         "refund_id": refund["refund_id"],
         "status": refund["status"],
         "message": (
-            f"订单 {order_id} 已发货，退款申请已提交，需要人工审核。"
-            f"退款原因：{reason}"
+            f"订单 {order_id} 已发货，退款申请已提交，需要人工审核。退款原因：{reason}"
         ),
     }

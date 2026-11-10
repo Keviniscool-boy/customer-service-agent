@@ -78,9 +78,7 @@ class WeKnoraClient:
             raise WeKnoraError("没有配置 WeKnora Embedding 模型")
 
         for model in self.list_models():
-            model_type = str(
-                model.get("type") or model.get("model_type") or ""
-            ).lower()
+            model_type = str(model.get("type") or model.get("model_type") or "").lower()
             if model_type and "embedding" not in model_type:
                 continue
             if reference in {
@@ -93,8 +91,7 @@ class WeKnoraClient:
                     return str(model_id)
 
         raise WeKnoraError(
-            f"WeKnora 中找不到 Embedding 模型：{reference}，"
-            "请检查模型名称或模型 ID"
+            f"WeKnora 中找不到 Embedding 模型：{reference}，请检查模型名称或模型 ID"
         )
 
     def upload_markdown(

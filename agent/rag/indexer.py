@@ -10,16 +10,10 @@ def build_index(
 ) -> None:
     """把切片批量转成向量，并保存为索引。"""
     chunks = json.loads(Path(chunks_path).read_text(encoding="utf-8"))
-    texts = [
-        f"{chunk['section']}\n{chunk['text']}"
-        for chunk in chunks
-    ]
+    texts = [f"{chunk['section']}\n{chunk['text']}" for chunk in chunks]
     vectors = Embedder().encode(texts)
 
-    index = [
-        {**chunk, "embedding": vector}
-        for chunk, vector in zip(chunks, vectors)
-    ]
+    index = [{**chunk, "embedding": vector} for chunk, vector in zip(chunks, vectors)]
 
     output_path = Path(index_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

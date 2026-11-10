@@ -103,40 +103,36 @@ class EcomAgent:
 
             enabled_tools = set(self.agent_config.enabled_tools)
             mcp_tools = [
-            tool
-            for tool in mcp_tools
-            if tool["function"]["name"] in enabled_tools
-        ]
+                tool for tool in mcp_tools if tool["function"]["name"] in enabled_tools
+            ]
             local_tools = self.tool_registry.get_definitions(enabled_tools)
-            self.mcp_tool_names = {
-            tool["function"]["name"] for tool in mcp_tools
-        }
+            self.mcp_tool_names = {tool["function"]["name"] for tool in mcp_tools}
             self.tool_definitions = [
-            tool
-            for tool in local_tools
-            if tool["function"]["name"] not in self.mcp_tool_names
-        ] + mcp_tools
+                tool
+                for tool in local_tools
+                if tool["function"]["name"] not in self.mcp_tool_names
+            ] + mcp_tools
             self.system_prompt = build_system_prompt(
-            self.agent_config,
-            self.tool_definitions,
-        )
+                self.agent_config,
+                self.tool_definitions,
+            )
 
             self.messages: list[dict] = [
-            {"role": "system", "content": self.system_prompt}
-        ]
+                {"role": "system", "content": self.system_prompt}
+            ]
 
             saved_messages = load_messages(self.session_id)
             saved_summary = load_summary(self.session_id)
             if saved_summary:
                 self.messages.append(
-                {"role": "system", "content": f"历史摘要：{saved_summary}"}
-            )
+                    {"role": "system", "content": f"历史摘要：{saved_summary}"}
+                )
                 self.summary = saved_summary
             if saved_messages:
                 self.messages.extend(
-                message
-                for message in saved_messages
-                if message.get("role") != "system"
+                    message
+                    for message in saved_messages
+                    if message.get("role") != "system"
                 )
         except Exception:
             self.close()
@@ -163,9 +159,7 @@ class EcomAgent:
 
             if not message.tool_calls:
                 final_text = message.content or ""
-                self.messages.append(
-                    {"role": "assistant", "content": final_text}
-                )
+                self.messages.append({"role": "assistant", "content": final_text})
                 break
 
             assistant_message = {
@@ -193,10 +187,9 @@ class EcomAgent:
                     if not isinstance(tool_arguments, dict):
                         raise ValueError("工具参数必须是 JSON 对象")
 
-                    if (
-                        self.tool_registry.requires_confirmation(tool_name)
-                        and not has_explicit_refund_confirmation(user_input)
-                    ):
+                    if self.tool_registry.requires_confirmation(
+                        tool_name
+                    ) and not has_explicit_refund_confirmation(user_input):
                         tool_result = {
                             "success": False,
                             "requires_confirmation": True,
@@ -356,16 +349,12 @@ class EcomAgent:
 
         result.handoff_ticket_id = handoff["ticket_id"]
         result.follow_up_question = None
-        result.reply += (
-            f"\n已为你转人工，工单号：{handoff['ticket_id']}。"
-        )
+        result.reply += f"\n已为你转人工，工单号：{handoff['ticket_id']}。"
         return result
 
     def reset(self):
         self.summary = None
-        self.messages = [
-            {"role": "system", "content": self.system_prompt}
-        ]
+        self.messages = [{"role": "system", "content": self.system_prompt}]
         replace_messages(self.session_id, [])
         update_summary(self.session_id, None)
 
@@ -379,9 +368,7 @@ class EcomAgent:
 
     def _save_to_database(self):
         conversation_messages = [
-            message
-            for message in self.messages
-            if message.get("role") != "system"
+            message for message in self.messages if message.get("role") != "system"
         ]
         replace_messages(self.session_id, conversation_messages)
         update_summary(self.session_id, self.summary)
@@ -391,12 +378,10 @@ class EcomAgent:
 
     def _compress_history(self):
         conversation_messages = [
-            message
-            for message in self.messages
-            if message["role"] != "system"
+            message for message in self.messages if message["role"] != "system"
         ]
-        old_messages = conversation_messages[:-self.history_keep_recent]
-        recent_messages = conversation_messages[-self.history_keep_recent:]
+        old_messages = conversation_messages[: -self.history_keep_recent]
+        recent_messages = conversation_messages[-self.history_keep_recent :]
 
         self.summary = summarize(
             client=self.client,
@@ -414,9 +399,8 @@ class EcomAgent:
     def _restore_summary(self):
         summary_prefix = "历史摘要："
         for message in self.messages:
-            if (
-                message.get("role") == "system"
-                and message.get("content", "").startswith(summary_prefix)
-            ):
-                self.summary = message["content"][len(summary_prefix):]
+            if message.get("role") == "system" and message.get(
+                "content", ""
+            ).startswith(summary_prefix):
+                self.summary = message["content"][len(summary_prefix) :]
                 break

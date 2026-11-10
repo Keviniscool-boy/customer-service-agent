@@ -1,273 +1,307 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
-import AdminDashboard from './components/AdminDashboard.vue'
+import { computed, nextTick, onMounted, ref } from "vue";
+import AdminDashboard from "./components/AdminDashboard.vue";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8765'
-const mode = ref('login')
-const username = ref('')
-const password = ref('')
-const showPassword = ref(false)
-const loading = ref(false)
-const message = ref('')
-const messageType = ref('')
-const storedUser = localStorage.getItem('xiaojie_user')
-const user = ref(storedUser ? JSON.parse(storedUser) : null)
-const authenticated = ref(Boolean(localStorage.getItem('xiaojie_token') && user.value))
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8765";
+const mode = ref("login");
+const username = ref("");
+const password = ref("");
+const showPassword = ref(false);
+const loading = ref(false);
+const message = ref("");
+const messageType = ref("");
+const storedUser = localStorage.getItem("xiaojie_user");
+const user = ref(storedUser ? JSON.parse(storedUser) : null);
+const authenticated = ref(
+  Boolean(localStorage.getItem("xiaojie_token") && user.value),
+);
 
-const sessions = ref([])
-const agents = ref([])
-const activeAgentId = ref(localStorage.getItem('xiaojie_agent_id') || 'ecom-default')
-const activeSessionId = ref(null)
-const chatMessages = ref([])
-const draft = ref('')
-const sessionsLoading = ref(false)
-const messagesLoading = ref(false)
-const sending = ref(false)
-const workspaceError = ref('')
-const messagesEl = ref(null)
-const isLogin = computed(() => mode.value === 'login')
-const isLoggedIn = computed(() => authenticated.value && Boolean(user.value))
-const isAdmin = computed(() => isLoggedIn.value && user.value.role === 'admin')
-const activeSession = computed(() => sessions.value.find((session) => session.id === activeSessionId.value))
-const activeAgent = computed(() => agents.value.find((agent) => agent.agent_id === activeAgentId.value) || {
-  agent_id: 'default-agent',
-  name: '智能助手',
-  role: '通用智能助手',
-  welcome_message: '你好，我可以帮助你。',
-  service_scope: [],
-  is_public: true,
-})
+const sessions = ref([]);
+const agents = ref([]);
+const activeAgentId = ref(
+  localStorage.getItem("xiaojie_agent_id") || "ecom-default",
+);
+const activeSessionId = ref(null);
+const chatMessages = ref([]);
+const draft = ref("");
+const sessionsLoading = ref(false);
+const messagesLoading = ref(false);
+const sending = ref(false);
+const workspaceError = ref("");
+const messagesEl = ref(null);
+const isLogin = computed(() => mode.value === "login");
+const isLoggedIn = computed(() => authenticated.value && Boolean(user.value));
+const isAdmin = computed(() => isLoggedIn.value && user.value.role === "admin");
+const activeSession = computed(() =>
+  sessions.value.find((session) => session.id === activeSessionId.value),
+);
+const activeAgent = computed(
+  () =>
+    agents.value.find((agent) => agent.agent_id === activeAgentId.value) || {
+      agent_id: "default-agent",
+      name: "智能助手",
+      role: "通用智能助手",
+      welcome_message: "你好，我可以帮助你。",
+      service_scope: [],
+      is_public: true,
+    },
+);
 const suggestedQuestions = computed(() =>
   (activeAgent.value.service_scope || [])
     .slice(0, 3)
     .map((scope) => `我想咨询${scope}`),
-)
+);
 
 function visibleReply(payload) {
-  let value = typeof payload === 'string' ? payload : payload?.reply
-  if (typeof value !== 'string') return ''
+  let value = typeof payload === "string" ? payload : payload?.reply;
+  if (typeof value !== "string") return "";
 
-  value = value.trim()
+  value = value.trim();
   try {
-    const parsed = JSON.parse(value)
-    if (parsed && typeof parsed.reply === 'string') {
-      value = parsed.reply.trim()
-      if (typeof parsed.follow_up_question === 'string' && parsed.follow_up_question.trim() && !value.includes(parsed.follow_up_question)) {
-        value += `\n${parsed.follow_up_question.trim()}`
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed.reply === "string") {
+      value = parsed.reply.trim();
+      if (
+        typeof parsed.follow_up_question === "string" &&
+        parsed.follow_up_question.trim() &&
+        !value.includes(parsed.follow_up_question)
+      ) {
+        value += `\n${parsed.follow_up_question.trim()}`;
       }
     }
   } catch {
     // 普通文本不需要解析。
   }
-  return value
+  return value;
 }
 
-function setMessage(text, type = 'error') {
-  message.value = text
-  messageType.value = type
+function setMessage(text, type = "error") {
+  message.value = text;
+  messageType.value = type;
 }
 
 function switchMode(nextMode) {
-  mode.value = nextMode
-  message.value = ''
-  messageType.value = ''
+  mode.value = nextMode;
+  message.value = "";
+  messageType.value = "";
 }
 
 async function apiRequest(path, options = {}) {
-  const headers = { ...(options.headers || {}) }
-  const token = localStorage.getItem('xiaojie_token')
-  if (token) headers.Authorization = `Bearer ${token}`
+  const headers = { ...(options.headers || {}) };
+  const token = localStorage.getItem("xiaojie_token");
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (options.body && !(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json'
+    headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
-  const contentType = response.headers.get('content-type') || ''
-  const data = contentType.includes('application/json')
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
     ? await response.json()
-    : await response.text()
+    : await response.text();
   if (!response.ok) {
-    if (response.status === 401) logout()
-    throw new Error(data?.error?.message || '请求失败，请稍后重试。')
+    if (response.status === 401) logout();
+    throw new Error(data?.error?.message || "请求失败，请稍后重试。");
   }
-  return data
+  return data;
 }
 
 async function submitForm() {
   if (!username.value.trim() || !password.value) {
-    setMessage('请输入用户名和密码。')
-    return
+    setMessage("请输入用户名和密码。");
+    return;
   }
 
-  loading.value = true
-  message.value = ''
+  loading.value = true;
+  message.value = "";
 
   try {
-    const data = await apiRequest(`/${isLogin.value ? 'login' : 'register'}`, {
-      method: 'POST',
-      body: JSON.stringify({ username: username.value.trim(), password: password.value }),
-    })
+    const data = await apiRequest(`/${isLogin.value ? "login" : "register"}`, {
+      method: "POST",
+      body: JSON.stringify({
+        username: username.value.trim(),
+        password: password.value,
+      }),
+    });
 
     if (isLogin.value) {
-      localStorage.setItem('xiaojie_token', data.access_token)
-      localStorage.setItem('xiaojie_user', JSON.stringify(data.user))
-      user.value = data.user
-      authenticated.value = true
-      setMessage('登录成功。', 'success')
-      await loadAgents()
+      localStorage.setItem("xiaojie_token", data.access_token);
+      localStorage.setItem("xiaojie_user", JSON.stringify(data.user));
+      user.value = data.user;
+      authenticated.value = true;
+      setMessage("登录成功。", "success");
+      await loadAgents();
     } else {
-      setMessage('注册成功，请使用新账号登录。', 'success')
-      mode.value = 'login'
-      password.value = ''
+      setMessage("注册成功，请使用新账号登录。", "success");
+      mode.value = "login";
+      password.value = "";
     }
   } catch (error) {
-    setMessage(error.message || '无法连接服务器，请确认 FastAPI 已启动。')
+    setMessage(error.message || "无法连接服务器，请确认 FastAPI 已启动。");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 async function loadSessions() {
-  sessionsLoading.value = true
-  workspaceError.value = ''
+  sessionsLoading.value = true;
+  workspaceError.value = "";
   try {
-    const data = await apiRequest('/sessions')
+    const data = await apiRequest("/sessions");
     sessions.value = (data.sessions || []).filter(
       (session) => session.agent_id === activeAgentId.value,
-    )
+    );
     if (!sessions.value.length) {
-      await createSession()
+      await createSession();
     } else {
-      const selected = sessions.value.find((session) => session.id === activeSessionId.value)
-      await selectSession(selected || sessions.value[0])
+      const selected = sessions.value.find(
+        (session) => session.id === activeSessionId.value,
+      );
+      await selectSession(selected || sessions.value[0]);
     }
   } catch (error) {
-    workspaceError.value = error.message
+    workspaceError.value = error.message;
   } finally {
-    sessionsLoading.value = false
+    sessionsLoading.value = false;
   }
 }
 
 async function loadAgents() {
   try {
-    const data = await apiRequest('/agents')
-    agents.value = (data.agents || []).filter((agent) => agent.is_public || isAdmin.value)
+    const data = await apiRequest("/agents");
+    agents.value = (data.agents || []).filter(
+      (agent) => agent.is_public || isAdmin.value,
+    );
     if (!agents.value.some((agent) => agent.agent_id === activeAgentId.value)) {
-      activeAgentId.value = agents.value[0]?.agent_id || 'ecom-default'
+      activeAgentId.value = agents.value[0]?.agent_id || "ecom-default";
     }
-    localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
-    await loadSessions()
+    localStorage.setItem("xiaojie_agent_id", activeAgentId.value);
+    await loadSessions();
   } catch (error) {
-    workspaceError.value = error.message
+    workspaceError.value = error.message;
   }
 }
 
 async function changeAgent() {
-  activeSessionId.value = null
-  chatMessages.value = []
-  localStorage.setItem('xiaojie_agent_id', activeAgentId.value)
-  await loadSessions()
+  activeSessionId.value = null;
+  chatMessages.value = [];
+  localStorage.setItem("xiaojie_agent_id", activeAgentId.value);
+  await loadSessions();
 }
 
 async function createSession() {
   try {
-    const data = await apiRequest('/sessions', {
-      method: 'POST',
-      body: JSON.stringify({ title: '新对话', agent_id: activeAgentId.value }),
-    })
+    const data = await apiRequest("/sessions", {
+      method: "POST",
+      body: JSON.stringify({ title: "新对话", agent_id: activeAgentId.value }),
+    });
     const newSession = {
       id: data.session_id,
-      title: data.title || '新对话',
+      title: data.title || "新对话",
       agent_id: activeAgentId.value,
       summary: null,
-    }
-    sessions.value = [newSession, ...sessions.value]
-    await selectSession(newSession)
+    };
+    sessions.value = [newSession, ...sessions.value];
+    await selectSession(newSession);
   } catch (error) {
-    workspaceError.value = error.message
+    workspaceError.value = error.message;
   }
 }
 
 async function selectSession(session) {
-  if (!session) return
-  activeSessionId.value = session.id
-  chatMessages.value = []
-  messagesLoading.value = true
+  if (!session) return;
+  activeSessionId.value = session.id;
+  chatMessages.value = [];
+  messagesLoading.value = true;
   try {
-    const data = await apiRequest(`/sessions/${session.id}/messages`)
+    const data = await apiRequest(`/sessions/${session.id}/messages`);
     chatMessages.value = (data.messages || []).map((message) => ({
       ...message,
-      content: message.role === 'assistant' ? visibleReply(message.content) : message.content,
-    }))
-    await scrollToBottom()
+      content:
+        message.role === "assistant"
+          ? visibleReply(message.content)
+          : message.content,
+    }));
+    await scrollToBottom();
   } catch (error) {
-    workspaceError.value = error.message
+    workspaceError.value = error.message;
   } finally {
-    messagesLoading.value = false
+    messagesLoading.value = false;
   }
 }
 
 async function sendMessage() {
-  const content = draft.value.trim()
-  if (!content || !activeSessionId.value || sending.value) return
+  const content = draft.value.trim();
+  if (!content || !activeSessionId.value || sending.value) return;
 
-  draft.value = ''
-  chatMessages.value.push({ role: 'user', content })
-  await scrollToBottom()
-  sending.value = true
-  workspaceError.value = ''
+  draft.value = "";
+  chatMessages.value.push({ role: "user", content });
+  await scrollToBottom();
+  sending.value = true;
+  workspaceError.value = "";
 
   try {
-    const data = await apiRequest('/chat', {
-      method: 'POST',
+    const data = await apiRequest("/chat", {
+      method: "POST",
       body: JSON.stringify({
         message: content,
         session_id: activeSessionId.value,
         agent_id: activeAgentId.value,
       }),
-    })
-    const reply = visibleReply(data)
-    chatMessages.value.push({ role: 'assistant', content: reply || '暂时没有收到回复。' })
-    await loadSessions()
+    });
+    const reply = visibleReply(data);
+    chatMessages.value.push({
+      role: "assistant",
+      content: reply || "暂时没有收到回复。",
+    });
+    await loadSessions();
   } catch (error) {
-    workspaceError.value = error.message
-    chatMessages.value.push({ role: 'assistant', content: '请求失败，请检查服务是否正常运行。' })
+    workspaceError.value = error.message;
+    chatMessages.value.push({
+      role: "assistant",
+      content: "请求失败，请检查服务是否正常运行。",
+    });
   } finally {
-    sending.value = false
-    await scrollToBottom()
+    sending.value = false;
+    await scrollToBottom();
   }
 }
 
 function handleComposerKeydown(event) {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
-    sendMessage()
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
   }
 }
 
 async function scrollToBottom() {
-  await nextTick()
-  if (messagesEl.value) messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+  await nextTick();
+  if (messagesEl.value)
+    messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
 }
 
 function logout() {
-  localStorage.removeItem('xiaojie_token')
-  localStorage.removeItem('xiaojie_user')
-  user.value = null
-  authenticated.value = false
-  sessions.value = []
-  agents.value = []
-  activeSessionId.value = null
-  chatMessages.value = []
-  username.value = ''
-  password.value = ''
-  mode.value = 'login'
-  setMessage('已退出登录。', 'success')
+  localStorage.removeItem("xiaojie_token");
+  localStorage.removeItem("xiaojie_user");
+  user.value = null;
+  authenticated.value = false;
+  sessions.value = [];
+  agents.value = [];
+  activeSessionId.value = null;
+  chatMessages.value = [];
+  username.value = "";
+  password.value = "";
+  mode.value = "login";
+  setMessage("已退出登录。", "success");
 }
 
 onMounted(() => {
-  if (isLoggedIn.value) loadAgents()
-})
+  if (isLoggedIn.value) loadAgents();
+});
 </script>
 
 <template>
@@ -283,14 +317,27 @@ onMounted(() => {
         </div>
       </div>
 
-      <button class="new-chat-button" type="button" :disabled="sessionsLoading" @click="createSession">
+      <button
+        class="new-chat-button"
+        type="button"
+        :disabled="sessionsLoading"
+        @click="createSession"
+      >
         <span aria-hidden="true">+</span> 新建会话
       </button>
 
       <label class="agent-picker">
         <span>可用客服</span>
-        <select v-model="activeAgentId" :disabled="sessionsLoading" @change="changeAgent">
-          <option v-for="agent in agents" :key="agent.agent_id" :value="agent.agent_id">
+        <select
+          v-model="activeAgentId"
+          :disabled="sessionsLoading"
+          @change="changeAgent"
+        >
+          <option
+            v-for="agent in agents"
+            :key="agent.agent_id"
+            :value="agent.agent_id"
+          >
             {{ agent.name }}
           </option>
         </select>
@@ -310,18 +357,29 @@ onMounted(() => {
           @click="selectSession(session)"
         >
           <span class="session-dot" aria-hidden="true"></span>
-          <span class="session-title">{{ session.title || '新对话' }}</span>
+          <span class="session-title">{{ session.title || "新对话" }}</span>
         </button>
-        <p v-if="!sessions.length && !sessionsLoading" class="empty-note">还没有会话</p>
+        <p v-if="!sessions.length && !sessionsLoading" class="empty-note">
+          还没有会话
+        </p>
       </div>
 
       <div class="user-area">
-        <div class="user-avatar">{{ user.username.slice(0, 1).toUpperCase() }}</div>
+        <div class="user-avatar">
+          {{ user.username.slice(0, 1).toUpperCase() }}
+        </div>
         <div class="user-info">
           <strong>{{ user.username }}</strong>
           <span>已登录</span>
         </div>
-        <button class="logout-button" type="button" title="退出登录" @click="logout">退出</button>
+        <button
+          class="logout-button"
+          type="button"
+          title="退出登录"
+          @click="logout"
+        >
+          退出
+        </button>
       </div>
     </aside>
 
@@ -342,7 +400,14 @@ onMounted(() => {
             <h2>你好，{{ user.username }}</h2>
             <p>{{ activeAgent.welcome_message }}</p>
             <div v-if="suggestedQuestions.length" class="suggestion-list">
-              <button v-for="question in suggestedQuestions" :key="question" type="button" @click="draft = question">{{ question }}</button>
+              <button
+                v-for="question in suggestedQuestions"
+                :key="question"
+                type="button"
+                @click="draft = question"
+              >
+                {{ question }}
+              </button>
             </div>
           </div>
 
@@ -352,9 +417,16 @@ onMounted(() => {
             class="message-row"
             :class="item.role === 'user' ? 'from-user' : 'from-agent'"
           >
-            <div v-if="item.role !== 'user'" class="message-avatar">{{ activeAgent.name.slice(0, 1) }}</div>
+            <div v-if="item.role !== 'user'" class="message-avatar">
+              {{ activeAgent.name.slice(0, 1) }}
+            </div>
             <div class="message-bubble">{{ item.content }}</div>
-            <div v-if="item.role === 'user'" class="message-avatar user-message-avatar">{{ user.username.slice(0, 1).toUpperCase() }}</div>
+            <div
+              v-if="item.role === 'user'"
+              class="message-avatar user-message-avatar"
+            >
+              {{ user.username.slice(0, 1).toUpperCase() }}
+            </div>
           </div>
         </template>
       </div>
@@ -367,14 +439,18 @@ onMounted(() => {
           :disabled="sending"
           @keydown="handleComposerKeydown"
         ></textarea>
-        <button class="send-button" type="submit" :disabled="sending || !draft.trim()" title="发送消息">
-          {{ sending ? '...' : '发送' }}
+        <button
+          class="send-button"
+          type="submit"
+          :disabled="sending || !draft.trim()"
+          title="发送消息"
+        >
+          {{ sending ? "..." : "发送" }}
         </button>
         <p>Enter 发送 · Shift + Enter 换行</p>
       </form>
       <p v-if="workspaceError" class="workspace-error">{{ workspaceError }}</p>
     </section>
-
   </main>
 
   <main v-else class="auth-shell">
@@ -384,9 +460,12 @@ onMounted(() => {
       <h1>智能 Agent 工作台</h1>
       <p class="brand-copy">选择客服，直接提问，获得清晰的服务答复。</p>
       <div class="feature-list">
-        <span>01</span><p>保存多轮对话</p>
-        <span>02</span><p>查询订单和物流</p>
-        <span>03</span><p>咨询商品和售后</p>
+        <span>01</span>
+        <p>保存多轮对话</p>
+        <span>02</span>
+        <p>查询订单和物流</p>
+        <span>03</span>
+        <p>咨询商品和售后</p>
       </div>
     </section>
 
@@ -394,23 +473,59 @@ onMounted(() => {
       <form class="auth-form" @submit.prevent="submitForm">
         <div class="form-heading">
           <p class="eyebrow">AGENT CONSOLE</p>
-          <h2>{{ isLogin ? '欢迎回来' : '创建账号' }}</h2>
-          <p class="muted">{{ isLogin ? '登录后开始使用 Agent 工作台。' : '注册一个账号，保存你的会话记录。' }}</p>
+          <h2>{{ isLogin ? "欢迎回来" : "创建账号" }}</h2>
+          <p class="muted">
+            {{
+              isLogin
+                ? "登录后开始使用 Agent 工作台。"
+                : "注册一个账号，保存你的会话记录。"
+            }}
+          </p>
         </div>
 
         <div class="mode-tabs" role="tablist" aria-label="登录或注册">
-          <button :class="{ active: isLogin }" type="button" @click="switchMode('login')">登录</button>
-          <button :class="{ active: !isLogin }" type="button" @click="switchMode('register')">注册</button>
+          <button
+            :class="{ active: isLogin }"
+            type="button"
+            @click="switchMode('login')"
+          >
+            登录
+          </button>
+          <button
+            :class="{ active: !isLogin }"
+            type="button"
+            @click="switchMode('register')"
+          >
+            注册
+          </button>
         </div>
 
-        <label>用户名<input v-model="username" name="username" autocomplete="username" placeholder="请输入用户名" /></label>
+        <label
+          >用户名<input
+            v-model="username"
+            name="username"
+            autocomplete="username"
+            placeholder="请输入用户名"
+        /></label>
         <label>
           密码
-          <input v-model="password" name="password" :type="showPassword ? 'text' : 'password'" :autocomplete="isLogin ? 'current-password' : 'new-password'" placeholder="请输入密码" />
+          <input
+            v-model="password"
+            name="password"
+            :type="showPassword ? 'text' : 'password'"
+            :autocomplete="isLogin ? 'current-password' : 'new-password'"
+            placeholder="请输入密码"
+          />
         </label>
-        <label class="password-toggle"><input v-model="showPassword" type="checkbox" /> 显示密码</label>
-        <p v-if="message" :class="['form-message', messageType]" role="status">{{ message }}</p>
-        <button class="primary-button" type="submit" :disabled="loading">{{ loading ? '处理中...' : isLogin ? '登录工作台' : '创建账号' }}</button>
+        <label class="password-toggle"
+          ><input v-model="showPassword" type="checkbox" /> 显示密码</label
+        >
+        <p v-if="message" :class="['form-message', messageType]" role="status">
+          {{ message }}
+        </p>
+        <button class="primary-button" type="submit" :disabled="loading">
+          {{ loading ? "处理中..." : isLogin ? "登录工作台" : "创建账号" }}
+        </button>
       </form>
     </section>
   </main>

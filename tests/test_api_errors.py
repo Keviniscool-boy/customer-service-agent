@@ -227,9 +227,12 @@ class APIErrorsTest(unittest.TestCase):
             database.DB_PATH = Path(temp_dir) / "app.db"
             try:
                 limiter = RequestRateLimiter(max_requests=1, window_seconds=60)
-                with TestClient(app) as client, patch(
-                    "api.main.registration_rate_limiter",
-                    limiter,
+                with (
+                    TestClient(app) as client,
+                    patch(
+                        "api.main.registration_rate_limiter",
+                        limiter,
+                    ),
                 ):
                     first = client.post(
                         "/register",
@@ -270,9 +273,10 @@ class APIErrorsTest(unittest.TestCase):
                         reply="你好",
                     )
                     limiter = RequestRateLimiter(max_requests=1, window_seconds=60)
-                    with patch("api.main.chat_rate_limiter", limiter), patch(
-                        "api.main.EcomAgent"
-                    ) as agent_class:
+                    with (
+                        patch("api.main.chat_rate_limiter", limiter),
+                        patch("api.main.EcomAgent") as agent_class,
+                    ):
                         agent_class.return_value.chat.return_value = result
                         first = client.post(
                             "/chat",

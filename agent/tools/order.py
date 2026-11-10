@@ -18,11 +18,10 @@ def query_order(
     order = repository.get_order_for_user(order_id, user_id)
     if order is None:
         return {
-            "success":False,
-            "message":f"没有找到订单{order_id}",
-
+            "success": False,
+            "message": f"没有找到订单{order_id}",
         }
     return {
-        "success":True,
+        "success": True,
         "data": order,
     }

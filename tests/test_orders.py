@@ -55,9 +55,7 @@ class OrdersTest(unittest.TestCase):
 
                 self.assertFalse(result["success"])
                 self.assertEqual(database.get_order("ORD-002")["status"], "待发货")
-                self.assertIsNone(
-                    database.find_active_refund("ORD-002", "user-1")
-                )
+                self.assertIsNone(database.find_active_refund("ORD-002", "user-1"))
             finally:
                 database.DB_PATH = original_path
 

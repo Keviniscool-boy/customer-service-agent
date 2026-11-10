@@ -22,9 +22,7 @@ def validate_markdown_file(
     if path.suffix.lower() not in ALLOWED_MARKDOWN_SUFFIXES:
         raise ValueError("知识库目前只支持 .md 文件")
     if path.stat().st_size > max_file_bytes:
-        raise ValueError(
-            f"知识库文件不能超过 {max_file_bytes // 1024 // 1024} MB"
-        )
+        raise ValueError(f"知识库文件不能超过 {max_file_bytes // 1024 // 1024} MB")
 
     content = path.read_text(encoding="utf-8")
     if not content.strip():

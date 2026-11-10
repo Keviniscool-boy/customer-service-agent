@@ -26,9 +26,7 @@ class AgentAdminAPITest(unittest.TestCase):
             "/login",
             json={"username": "agent-admin", "password": "secret123"},
         )
-        self.headers = {
-            "Authorization": f"Bearer {login.json()['access_token']}"
-        }
+        self.headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
     def tearDown(self):
         self.client.__exit__(None, None, None)
@@ -83,12 +81,17 @@ class AgentAdminAPITest(unittest.TestCase):
 
     def test_admin_can_list_agent_config_versions(self):
         config = AgentConfig.model_validate(self.config_payload())
-        with patch(
-            "api.main.get_agent_config",
-            return_value=config,
-        ), patch(
-            "api.main.list_agent_config_versions",
-            return_value=[{"version": 1, "created_at": "2026-08-21T00:00:00+00:00"}],
+        with (
+            patch(
+                "api.main.get_agent_config",
+                return_value=config,
+            ),
+            patch(
+                "api.main.list_agent_config_versions",
+                return_value=[
+                    {"version": 1, "created_at": "2026-08-21T00:00:00+00:00"}
+                ],
+            ),
         ):
             response = self.client.get(
                 "/admin/agents/support-agent/versions",

@@ -2,7 +2,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT=Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from mcp.server import MCPServer
@@ -10,6 +10,7 @@ from agent.database import init_db
 from agent.tools.order import query_order as local_query_order
 
 mcp = MCPServer("ecom-tools")
+
 
 @mcp.tool()
 def query_order(order_id: str, user_id: str | None = None) -> str:
@@ -20,6 +21,7 @@ def query_order(order_id: str, user_id: str | None = None) -> str:
     """
     result = local_query_order(order_id, user_id=user_id)
     return json.dumps(result, ensure_ascii=False)
+
 
 if __name__ == "__main__":
     init_db()

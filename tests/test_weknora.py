@@ -21,7 +21,9 @@ class WeKnoraClientTest(unittest.TestCase):
         ).encode("utf-8")
         response.__enter__.return_value = response
 
-        with patch("agent.integrations.weknora.urlopen", return_value=response) as open_mock:
+        with patch(
+            "agent.integrations.weknora.urlopen", return_value=response
+        ) as open_mock:
             result = WeKnoraClient(
                 "http://weknora.local",
                 "secret-key",
@@ -47,8 +49,12 @@ class WeKnoraClientTest(unittest.TestCase):
         response = self.response(
             {"success": True, "data": {"id": "kb-1", "name": "测试知识库"}}
         )
-        with patch("agent.integrations.weknora.urlopen", return_value=response) as open_mock:
-            result = WeKnoraClient("http://weknora.local", "secret-key").create_knowledge_base(
+        with patch(
+            "agent.integrations.weknora.urlopen", return_value=response
+        ) as open_mock:
+            result = WeKnoraClient(
+                "http://weknora.local", "secret-key"
+            ).create_knowledge_base(
                 "测试知识库",
                 description="说明",
                 embedding_model_id="embedding-1",
@@ -101,9 +107,9 @@ class WeKnoraClientTest(unittest.TestCase):
         )
         with patch("agent.integrations.weknora.urlopen", return_value=response):
             with self.assertRaisesRegex(WeKnoraError, "找不到 Embedding 模型"):
-                WeKnoraClient("http://weknora.local", "secret-key").resolve_embedding_model_id(
-                    "missing-model"
-                )
+                WeKnoraClient(
+                    "http://weknora.local", "secret-key"
+                ).resolve_embedding_model_id("missing-model")
 
     def test_upload_markdown_uses_multipart_form(self):
         response = self.response(
@@ -112,15 +118,21 @@ class WeKnoraClientTest(unittest.TestCase):
                 "data": {"id": "doc-1", "parse_status": "pending"},
             }
         )
-        with patch("agent.integrations.weknora.urlopen", return_value=response) as open_mock:
-            result = WeKnoraClient("http://weknora.local", "secret-key").upload_markdown(
+        with patch(
+            "agent.integrations.weknora.urlopen", return_value=response
+        ) as open_mock:
+            result = WeKnoraClient(
+                "http://weknora.local", "secret-key"
+            ).upload_markdown(
                 "kb-1",
                 "faq.md",
                 "# FAQ\n答案".encode("utf-8"),
             )
 
         request = open_mock.call_args.args[0]
-        self.assertIn("multipart/form-data; boundary=", request.get_header("Content-type"))
+        self.assertIn(
+            "multipart/form-data; boundary=", request.get_header("Content-type")
+        )
         self.assertIn(b'filename="faq.md"', request.data)
         self.assertIn("答案".encode("utf-8"), request.data)
         self.assertEqual(result["id"], "doc-1")
@@ -180,9 +192,7 @@ class WeKnoraClientTest(unittest.TestCase):
                     "content": "七天无理由退货。",
                 }
             ]
-            result = json.loads(
-                make_weknora_search_knowledge("kb-1")("如何退货")
-            )
+            result = json.loads(make_weknora_search_knowledge("kb-1")("如何退货"))
 
         self.assertTrue(result["success"])
         self.assertEqual(result["data"][0]["doc"], "退货政策")

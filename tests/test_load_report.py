@@ -25,11 +25,7 @@ class LoadReportTest(unittest.TestCase):
                 "p95": 23000,
             },
         ]
-        resources = {
-            "02-auth": {
-                "backend": {"cpu": 1505.97, "memory_mib": 2329.6}
-            }
-        }
+        resources = {"02-auth": {"backend": {"cpu": 1505.97, "memory_mib": 2329.6}}}
 
         with tempfile.TemporaryDirectory() as temp_dir:
             results_dir = Path(temp_dir)

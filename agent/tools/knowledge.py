@@ -34,11 +34,7 @@ def _search_with_retriever(
             ensure_ascii=False,
         )
 
-    results = [
-        result
-        for result in results
-        if result["score"] >= MIN_RELEVANCE_SCORE
-    ]
+    results = [result for result in results if result["score"] >= MIN_RELEVANCE_SCORE]
     if not results:
         return json.dumps(
             {"success": False, "message": "没有找到相关知识"},
@@ -117,7 +113,9 @@ def make_weknora_search_knowledge(knowledge_base_id: str):
                 or item.get("file_name")
                 or "WeKnora 知识库",
                 "section": item.get("section") or item.get("knowledge_filename", ""),
-                "text": item.get("text") or item.get("content") or item.get("chunk", ""),
+                "text": item.get("text")
+                or item.get("content")
+                or item.get("chunk", ""),
             }
             for item in results
             if isinstance(item, dict)

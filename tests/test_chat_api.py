@@ -100,7 +100,9 @@ class ChatAPIResponseTest(unittest.TestCase):
                             headers=headers,
                         )
 
-                    self.assertEqual(response.text, "请提供订单号。\n您想查询哪个订单？")
+                    self.assertEqual(
+                        response.text, "请提供订单号。\n您想查询哪个订单？"
+                    )
                     self.assertNotIn("intent", response.text)
                     self.assertNotIn("confidence", response.text)
             finally:

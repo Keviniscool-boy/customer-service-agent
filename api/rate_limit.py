@@ -73,7 +73,9 @@ class RequestRateLimiter:
         now = monotonic()
         with self._lock:
             for stored_key, stored_requests in list(self._requests.items()):
-                while stored_requests and now - stored_requests[0] >= self.window_seconds:
+                while (
+                    stored_requests and now - stored_requests[0] >= self.window_seconds
+                ):
                     stored_requests.popleft()
                 if not stored_requests:
                     self._requests.pop(stored_key, None)

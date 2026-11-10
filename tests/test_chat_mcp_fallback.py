@@ -13,9 +13,7 @@ class ChatMCPFallbackTest(unittest.TestCase):
         ):
             agent = EcomAgent()
 
-        tool_names = {
-            tool["function"]["name"] for tool in agent.tool_definitions
-        }
+        tool_names = {tool["function"]["name"] for tool in agent.tool_definitions}
 
         self.assertFalse(agent.mcp_available)
         self.assertIn("query_order", tool_names)
@@ -40,9 +38,7 @@ class ChatMCPFallbackTest(unittest.TestCase):
         ):
             agent = EcomAgent(agent_config=config)
 
-        tool_names = {
-            tool["function"]["name"] for tool in agent.tool_definitions
-        }
+        tool_names = {tool["function"]["name"] for tool in agent.tool_definitions}
         self.assertEqual(agent.model, "demo-model")
         self.assertEqual(agent.temperature, 0.2)
         self.assertEqual(tool_names, {"search_knowledge"})
@@ -51,10 +47,13 @@ class ChatMCPFallbackTest(unittest.TestCase):
         with patch("agent.chat.MCPClient.connect", return_value=[]):
             agent = EcomAgent()
 
-        with patch.object(agent.client, "close") as model_close, patch.object(
-            agent.mcp_client,
-            "close",
-        ) as mcp_close:
+        with (
+            patch.object(agent.client, "close") as model_close,
+            patch.object(
+                agent.mcp_client,
+                "close",
+            ) as mcp_close,
+        ):
             agent.close()
 
         model_close.assert_called_once_with()
@@ -72,14 +71,17 @@ class ChatMCPFallbackTest(unittest.TestCase):
             knowledge_provider="local",
             enabled_tools=[],
         )
-        with patch("agent.chat.OpenAI") as openai_class, patch(
-            "agent.chat.MCPClient"
-        ) as mcp_class, patch(
-            "agent.chat.get_latest_session_id",
-            return_value="session-1",
-        ), patch(
-            "agent.chat.load_messages",
-            side_effect=OSError("database unavailable"),
+        with (
+            patch("agent.chat.OpenAI") as openai_class,
+            patch("agent.chat.MCPClient") as mcp_class,
+            patch(
+                "agent.chat.get_latest_session_id",
+                return_value="session-1",
+            ),
+            patch(
+                "agent.chat.load_messages",
+                side_effect=OSError("database unavailable"),
+            ),
         ):
             mcp_class.return_value.connect.return_value = []
 

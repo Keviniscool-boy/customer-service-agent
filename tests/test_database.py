@@ -31,12 +31,8 @@ class DatabaseTest(unittest.TestCase):
             try:
                 database.init_db()
                 connection = database.get_connection()
-                foreign_keys = connection.execute(
-                    "PRAGMA foreign_keys"
-                ).fetchone()[0]
-                journal_mode = connection.execute(
-                    "PRAGMA journal_mode"
-                ).fetchone()[0]
+                foreign_keys = connection.execute("PRAGMA foreign_keys").fetchone()[0]
+                journal_mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
                 connection.close()
 
                 self.assertEqual(foreign_keys, 1)
@@ -57,9 +53,7 @@ class DatabaseTest(unittest.TestCase):
                     {
                         "role": "assistant",
                         "content": None,
-                        "tool_calls": [
-                            {"id": "call-1", "type": "function"}
-                        ],
+                        "tool_calls": [{"id": "call-1", "type": "function"}],
                     },
                 ]
 
@@ -78,12 +72,8 @@ class DatabaseTest(unittest.TestCase):
             try:
                 database.init_db()
                 session_id = database.create_session("user-a")
-                self.assertTrue(
-                    database.session_belongs_to_user(session_id, "user-a")
-                )
-                self.assertFalse(
-                    database.session_belongs_to_user(session_id, "user-b")
-                )
+                self.assertTrue(database.session_belongs_to_user(session_id, "user-a"))
+                self.assertFalse(database.session_belongs_to_user(session_id, "user-b"))
             finally:
                 database.DB_PATH = original_path
 

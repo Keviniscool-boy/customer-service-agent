@@ -122,14 +122,17 @@ class ToolPolicyTest(unittest.TestCase):
                         agent_config=config,
                         business_repository=repository,
                     )
-                with patch.object(
-                    agent.client.chat.completions,
-                    "create",
-                    side_effect=[tool_response, final_response],
-                ), patch.object(
-                    agent.client.beta.chat.completions,
-                    "parse",
-                    return_value=parsed_response,
+                with (
+                    patch.object(
+                        agent.client.chat.completions,
+                        "create",
+                        side_effect=[tool_response, final_response],
+                    ),
+                    patch.object(
+                        agent.client.beta.chat.completions,
+                        "parse",
+                        return_value=parsed_response,
+                    ),
                 ):
                     result = agent.chat("我想申请退款")
 
@@ -215,18 +218,22 @@ class ToolPolicyTest(unittest.TestCase):
                         user_id="user-1",
                         agent_config=config,
                     )
-                with patch.object(
-                    agent.client.chat.completions,
-                    "create",
-                    side_effect=[tool_response, final_response],
-                ), patch.object(
-                    agent.client.beta.chat.completions,
-                    "parse",
-                    return_value=parsed_response,
-                ), patch.object(
-                    agent.mcp_client,
-                    "call_tool",
-                    return_value='{"success": false, "error": "订单不存在"}',
+                with (
+                    patch.object(
+                        agent.client.chat.completions,
+                        "create",
+                        side_effect=[tool_response, final_response],
+                    ),
+                    patch.object(
+                        agent.client.beta.chat.completions,
+                        "parse",
+                        return_value=parsed_response,
+                    ),
+                    patch.object(
+                        agent.mcp_client,
+                        "call_tool",
+                        return_value='{"success": false, "error": "订单不存在"}',
+                    ),
                 ):
                     agent.chat("查询订单 ORD-999")
 

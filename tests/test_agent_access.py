@@ -119,10 +119,16 @@ class AgentAccessTest(unittest.TestCase):
         }
         requests = [
             self.client.post("/agents", json=payload, headers=self.headers_a),
-            self.client.get("/agents/ecom-default/prompt-preview", headers=self.headers_a),
+            self.client.get(
+                "/agents/ecom-default/prompt-preview", headers=self.headers_a
+            ),
             self.client.get("/agents/ecom-default/versions", headers=self.headers_a),
-            self.client.post("/agents/ecom-default/versions/1/restore", headers=self.headers_a),
-            self.client.put("/agents/ecom-default", json=payload, headers=self.headers_a),
+            self.client.post(
+                "/agents/ecom-default/versions/1/restore", headers=self.headers_a
+            ),
+            self.client.put(
+                "/agents/ecom-default", json=payload, headers=self.headers_a
+            ),
             self.client.delete("/agents/ecom-default", headers=self.headers_a),
             self.client.get("/agents/ecom-default/knowledge", headers=self.headers_a),
             self.client.post(
@@ -130,8 +136,12 @@ class AgentAccessTest(unittest.TestCase):
                 headers=self.headers_a,
                 files={"file": ("faq.md", b"# FAQ", "text/markdown")},
             ),
-            self.client.post("/agents/ecom-default/knowledge/rebuild", headers=self.headers_a),
-            self.client.delete("/agents/ecom-default/knowledge/faq.md", headers=self.headers_a),
+            self.client.post(
+                "/agents/ecom-default/knowledge/rebuild", headers=self.headers_a
+            ),
+            self.client.delete(
+                "/agents/ecom-default/knowledge/faq.md", headers=self.headers_a
+            ),
         ]
 
         self.assertTrue(all(response.status_code == 403 for response in requests))

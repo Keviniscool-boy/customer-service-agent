@@ -5,15 +5,16 @@ from pydantic import BaseModel, Field
 
 
 class IntentType(str, Enum):
-    ORDER_QUERY = "order_query"          # 订单查询
-    RETURN_REQUEST = "return_request"    # 退换货
+    ORDER_QUERY = "order_query"  # 订单查询
+    RETURN_REQUEST = "return_request"  # 退换货
     PRODUCT_CONSULT = "product_consult"  # 商品咨询
-    COMPLAINT = "complaint"              # 投诉
-    AFTER_SALE = "after_sale"            # 售后服务
-    PROMOTION = "promotion"              # 优惠活动
-    ACCOUNT = "account"                  # 账户问题
-    GREETING = "greeting"                # 打招呼
-    OTHER = "other"                      # 其他
+    COMPLAINT = "complaint"  # 投诉
+    AFTER_SALE = "after_sale"  # 售后服务
+    PROMOTION = "promotion"  # 优惠活动
+    ACCOUNT = "account"  # 账户问题
+    GREETING = "greeting"  # 打招呼
+    OTHER = "other"  # 其他
+
 
 class CustomerServiceResponse(BaseModel):
     """客服回复的结构化输出。"""

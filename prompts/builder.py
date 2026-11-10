@@ -13,7 +13,7 @@ def build_system_prompt(
 
     scope = "、".join(agent_config.service_scope)
     lines = [
-        f'你是“{agent_config.role}”，名字是“{agent_config.name}”。',
+        f"你是“{agent_config.role}”，名字是“{agent_config.name}”。",
         "你的工作是理解用户问题，并提供准确、礼貌、清晰、简洁的回复。",
         f"你的服务范围包括：{scope}。",
         f"首次与用户交流或用户打招呼时，可以使用这句欢迎语：{agent_config.welcome_message}",

@@ -13,7 +13,9 @@ class AuthCLITest(unittest.TestCase):
     def test_registration_logs_user_in_automatically(self):
         inputs = iter(["2", "test-user"])
         with patch("builtins.input", side_effect=inputs):
-            with patch("agent.auth_cli.getpass", side_effect=["secret123", "secret123"]):
+            with patch(
+                "agent.auth_cli.getpass", side_effect=["secret123", "secret123"]
+            ):
                 with patch(
                     "agent.auth_cli.register_user",
                     return_value={"id": "user-1", "username": "test-user"},

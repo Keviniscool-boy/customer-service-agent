@@ -39,9 +39,7 @@ class LoadRegressionTest(unittest.TestCase):
 
             user = register_user("load-regression-user", "secret123")
             self.assertEqual(user["username"], "load-regression-user")
-            self.assertIsNotNone(
-                authenticate_user("load-regression-user", "secret123")
-            )
+            self.assertIsNotNone(authenticate_user("load-regression-user", "secret123"))
 
     def test_agent_creation_does_not_reinitialize_schema(self):
         with (
@@ -66,9 +64,7 @@ class LoadRegressionTest(unittest.TestCase):
                 "/login",
                 json={"username": "db-error-user", "password": "secret123"},
             )
-            headers = {
-                "Authorization": f"Bearer {login.json()['access_token']}"
-            }
+            headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
             with patch(
                 "api.main.get_user_by_id",
